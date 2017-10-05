@@ -1,177 +1,106 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
+using Server.Network;
 using Server.Items;
-using Server.Mobiles;
 using Server.Targeting;
-using Server.Spells.SkillMasteries;
 
 namespace Server.Spells.Necromancy
 {
-    public class PoisonStrikeSpell : NecromancerSpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Poison Strike", "In Vas Nox",
-            203,
-            9031,
-            Reagent.NoxCrystal);
-        public PoisonStrikeSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class PoisonStrikeSpell : NecromancerSpell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Poison Strike", "In Vas Nox",
+				SpellCircle.Fourth, // 0.5 + 1.0 = 1.5s base cast delay
+				203,
+				9031,
+				Reagent.NoxCrystal
+			);
 
-        public override TimeSpan CastDelayBase
-        {
-            get
-            {
-                return TimeSpan.FromSeconds((Core.ML ? 1.75 : 1.5));
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return 50.0;
-            }
-        }
-        public override int RequiredMana
-        {
-            get
-            {
-                return 17;
-            }
-        }
-        public override bool DelayedDamage
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+		public override double RequiredSkill{ get{ return 50.0; } }
+		public override int RequiredMana{ get{ return 17; } }
 
-        public void Target(IDamageable m)
-        {
-            if (this.CheckHSequence(m))
-            {
-                Mobile mob = m as Mobile;
-                SpellHelper.Turn(this.Caster, m);
+		public PoisonStrikeSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-                ApplyEffects(m);
-                ConduitSpell.CheckAffected(Caster, m, ApplyEffects);
-            }
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-            this.FinishSequence();
-        }
+		public override bool DelayedDamage{ get{ return false; } }
 
-        public void ApplyEffects(IDamageable m, double strength = 1.0)
-        {
-            /* Creates a blast of poisonous energy centered on the target.
-                * The main target is inflicted with a large amount of Poison damage, and all valid targets in a radius of 2 tiles around the main target are inflicted with a lesser effect.
-                * One tile from main target receives 50% damage, two tiles from target receives 33% damage.
-                */
+		public void Target( Mobile m )
+		{
+			if ( CheckHSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-            Effects.SendLocationParticles(EffectItem.Create(m.Location, m.Map, EffectItem.DefaultDuration), 0x36B0, 1, 14, 63, 7, 9915, 0);
-            Effects.PlaySound(m.Location, m.Map, 0x229);
+				/* Creates a blast of poisonous energy centered on the target.
+				 * The main target is inflicted with a large amount of Poison damage, and all valid targets in a radius of 2 tiles around the main target are inflicted with a lesser effect.
+				 * One tile from main target receives 50% damage, two tiles from target receives 33% damage.
+				 */
 
-            double damage = Utility.RandomMinMax((Core.ML ? 32 : 36), 40) * ((300 + (this.GetDamageSkill(this.Caster) * 9)) / 1000);
-            damage *= strength;
+				CheckResisted( m ); // Check magic resist for skill, but do not use return value
 
-            double sdiBonus;
+				Effects.SendLocationParticles( EffectItem.Create( m.Location, m.Map, EffectItem.DefaultDuration ), 0x36B0, 1, 14, 63, 7, 9915, 0 );
+				Effects.PlaySound( m.Location, m.Map, 0x229 );
 
-            if (Core.SE)
-            {
-                if (Core.SA)
-                {
-                    sdiBonus = (double)SpellHelper.GetSpellDamageBonus(Caster, m, CastSkill, m is PlayerMobile) / 100;
-                }
-                else
-                {
-                    sdiBonus = (double)AosAttributes.GetValue(this.Caster, AosAttribute.SpellDamage) / 100;
+				double damage = Utility.RandomMinMax( 36, 40 ) * ((300 + (GetDamageSkill( Caster ) * 9)) / 1000);
 
-                    // PvP spell damage increase cap of 15% from an item’s magic property in Publish 33(SE)
-                    if (m is PlayerMobile && this.Caster.Player && sdiBonus > 15)
-                        sdiBonus = 15;
-                }
-            }
-            else
-            {
-                sdiBonus = (double)AosAttributes.GetValue(this.Caster, AosAttribute.SpellDamage) / 100;
-            }
+				Map map = m.Map;
 
-            double pvmDamage = (damage * (1 + sdiBonus)) * strength;
-            double pvpDamage = damage * (1 + sdiBonus);
+				if ( map != null )
+				{
+					ArrayList targets = new ArrayList();
 
-            Map map = m.Map;
+					foreach ( Mobile targ in m.GetMobilesInRange( 2 ) )
+					{
+						if ( (Caster == targ || SpellHelper.ValidIndirectTarget( Caster, targ )) && Caster.CanBeHarmful( targ, false ) )
+							targets.Add( targ );
+					}
 
-            if (map != null)
-            {
-                List<IDamageable> targets = new List<IDamageable>();
+					for ( int i = 0; i < targets.Count; ++i )
+					{
+						Mobile targ = (Mobile)targets[i];
 
-                if (this.Caster.CanBeHarmful(m, false))
-                    targets.Add(m);
+						int num;
 
-                IPooledEnumerable eable = m.Map.GetObjectsInRange(m.Location, 2);
+						if ( targ.InRange( m.Location, 0 ) )
+							num = 1;
+						else if ( targ.InRange( m.Location, 1 ) )
+							num = 2;
+						else
+							num = 3;
 
-                foreach (object o in eable)
-                {
-                    IDamageable id = o as IDamageable;
+						Caster.DoHarmful( targ );
+						SpellHelper.Damage( this, targ, damage / num, 0, 0, 0, 100, 0 );
+					}
+				}
+			}
 
-                    if (!(this.Caster is BaseCreature && id is BaseCreature))
-                    {
-                        if ((id is Mobile && (Mobile)id == Caster) || id == m)
-                            continue;
+			FinishSequence();
+		}
 
-                        if ((!(id is Mobile) || SpellHelper.ValidIndirectTarget(this.Caster, (Mobile)id)) && this.Caster.CanBeHarmful(id, false))
-                            targets.Add(id);
-                    }
-                }
+		private class InternalTarget : Target
+		{
+			private PoisonStrikeSpell m_Owner;
 
-                eable.Free();
+			public InternalTarget( PoisonStrikeSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
 
-                for (int i = 0; i < targets.Count; ++i)
-                {
-                    IDamageable id = targets[i];
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+					m_Owner.Target( (Mobile) o );
+			}
 
-                    int num;
-
-                    if (Utility.InRange(id.Location, m.Location, 0))
-                        num = 1;
-                    else if (Utility.InRange(id.Location, m.Location, 1))
-                        num = 2;
-                    else
-                        num = 3;
-
-                    this.Caster.DoHarmful(id);
-                    SpellHelper.Damage(this, id, ((id is PlayerMobile && this.Caster.Player) ? pvpDamage : pvmDamage) / num, 0, 0, 0, 100, 0);
-                }
-
-                targets.Clear();
-                targets.TrimExcess();
-            }
-        }
-
-        private class InternalTarget : Target
-        {
-            private readonly PoisonStrikeSpell m_Owner;
-            public InternalTarget(PoisonStrikeSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                this.m_Owner = owner;
-            }
-
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IDamageable)
-                    this.m_Owner.Target((IDamageable)o);
-            }
-
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

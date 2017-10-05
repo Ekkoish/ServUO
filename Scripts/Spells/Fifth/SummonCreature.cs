@@ -1,98 +1,89 @@
 using System;
 using Server.Mobiles;
+using Server.Network;
+using Server.Targeting;
 
 namespace Server.Spells.Fifth
 {
-    public class SummonCreatureSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Summon Creature", "Kal Xen",
-            16,
-            false,
-            Reagent.Bloodmoss,
-            Reagent.MandrakeRoot,
-            Reagent.SpidersSilk);
-        // NOTE: Creature list based on 1hr of summon/release on OSI.
-        private static readonly Type[] m_Types = new Type[]
-        {
-            typeof(PolarBear),
-            typeof(GrizzlyBear),
-            typeof(BlackBear),
-            typeof(Horse),
-            typeof(Walrus),
-            typeof(Chicken),
-            typeof(Scorpion),
-            typeof(GiantSerpent),
-            typeof(Llama),
-            typeof(Alligator),
-            typeof(GreyWolf),
-            typeof(Slime),
-            typeof(Eagle),
-            typeof(Gorilla),
-            typeof(SnowLeopard),
-            typeof(Pig),
-            typeof(Hind),
-            typeof(Rabbit)
-        };
-        public SummonCreatureSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class SummonCreatureSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Summon Creature", "Kal Xen",
+				SpellCircle.Fifth,
+				266,
+				9040,
+				Reagent.Bloodmoss,
+				Reagent.MandrakeRoot,
+				Reagent.SpidersSilk
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Fifth;
-            }
-        }
-        public override bool CheckCast()
-        {
-            if (!base.CheckCast())
-                return false;
+		public SummonCreatureSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-            if ((this.Caster.Followers + 2) > this.Caster.FollowersMax)
-            {
-                this.Caster.SendLocalizedMessage(1049645); // You have too many followers to summon that creature.
-                return false;
-            }
+		// TODO: Get real list
+		private static Type[] m_Types = new Type[]
+			{
+				typeof( WasteBear ),
+				typeof( SouthernBear ),
+				typeof( CorvinusBear ),
+				typeof( BradocsBear ),
+				typeof( Horse ),
+				typeof( Walrus ),
+				typeof( Elk ),
+				typeof( Deer ),
+				typeof( Dog ),
+				typeof( Boar ),
+				typeof( Chicken )
+			};
 
-            return true;
-        }
+		public override bool CheckCast()
+		{
+			if ( !base.CheckCast() )
+				return false;
 
-        public override void OnCast()
-        {
-            if (this.CheckSequence())
-            {
-                try
-                {
-                    BaseCreature creature = (BaseCreature)Activator.CreateInstance(m_Types[Utility.Random(m_Types.Length)]);
+			if ( (Caster.Followers + 2) > Caster.FollowersMax )
+			{
+				Caster.SendLocalizedMessage( 1049645 ); // You have too many followers to summon that creature.
+				return false;
+			}
 
-                    //creature.ControlSlots = 2;
+			return true;
+		}
 
-                    TimeSpan duration;
+		public override void OnCast()
+		{
+			if ( CheckSequence() )
+			{
+				try
+				{
+					BaseCreature creature = (BaseCreature)Activator.CreateInstance( m_Types[Utility.Random( m_Types.Length )] );
 
-                    if (Core.AOS)
-                        duration = TimeSpan.FromSeconds((2 * this.Caster.Skills.Magery.Fixed) / 5);
-                    else
-                        duration = TimeSpan.FromSeconds(4.0 * this.Caster.Skills[SkillName.Magery].Value);
+					creature.ControlSlots = 2;
 
-                    SpellHelper.Summon(creature, this.Caster, 0x215, duration, false, false);
-                }
-                catch
-                {
-                }
-            }
+					TimeSpan duration;
 
-            this.FinishSequence();
-        }
+					if ( Core.AOS )
+						duration = TimeSpan.FromSeconds( (2 * Caster.Skills.Magery.Fixed) / 5 );
+					else
+						duration = TimeSpan.FromSeconds( 4.0 * Caster.Skills[SkillName.Magery].Value );
 
-        public override TimeSpan GetCastDelay()
-        {
-            if (Core.AOS)
-                return TimeSpan.FromTicks(base.GetCastDelay().Ticks * 5);
+					SpellHelper.Summon( creature, Caster, 0x215, duration, false, false );
+				}
+				catch
+				{
+				}
+			}
 
-            return base.GetCastDelay() + TimeSpan.FromSeconds(6.0);
-        }
-    }
+			FinishSequence();
+		}
+
+		public override TimeSpan GetCastDelay()
+		{
+			if ( Core.AOS )
+				return TimeSpan.FromTicks( base.GetCastDelay().Ticks * 5 );
+
+			return base.GetCastDelay() + TimeSpan.FromSeconds( 6.0 );
+		}
+	}
 }

@@ -1,57 +1,51 @@
 using System;
 using Server.Mobiles;
+using Server.Network;
+using Server.Targeting;
 
 namespace Server.Spells.Eighth
 {
-    public class EarthElementalSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Earth Elemental", "Kal Vas Xen Ylem",
-            269,
-            9020,
-            false,
-            Reagent.Bloodmoss,
-            Reagent.MandrakeRoot,
-            Reagent.SpidersSilk);
-        public EarthElementalSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class EarthElementalSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Earth Elemental", "Kal Vas Xen Ylem",
+				SpellCircle.Eighth,
+				269,
+				9020,
+				false,
+				Reagent.Bloodmoss,
+				Reagent.MandrakeRoot,
+				Reagent.SpidersSilk
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Eighth;
-            }
-        }
-        public override bool CheckCast()
-        {
-            if (!base.CheckCast())
-                return false;
+		public EarthElementalSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-            if ((this.Caster.Followers + 2) > this.Caster.FollowersMax)
-            {
-                this.Caster.SendLocalizedMessage(1049645); // You have too many followers to summon that creature.
-                return false;
-            }
+		public override bool CheckCast()
+		{
+			if ( !base.CheckCast() )
+				return false;
 
-            return true;
-        }
+			if ( (Caster.Followers + 2) > Caster.FollowersMax )
+			{
+				Caster.SendLocalizedMessage( 1049645 ); // You have too many followers to summon that creature.
+				return false;
+			}
 
-        public override void OnCast()
-        {
-            if (this.CheckSequence())
-            {
-                TimeSpan duration = TimeSpan.FromSeconds((2 * this.Caster.Skills.Magery.Fixed) / 5);
+			return true;
+		}
 
-                if (Core.AOS)
-                    SpellHelper.Summon(new SummonedEarthElemental(), this.Caster, 0x217, duration, false, false);
-                else
-                    SpellHelper.Summon(new EarthElemental(), this.Caster, 0x217, duration, false, false);
-            }
+		public override void OnCast()
+		{
+			if ( CheckSequence() )
+			{
+				TimeSpan duration = TimeSpan.FromSeconds( (2 * Caster.Skills.Magery.Fixed) / 5 );
 
-            this.FinishSequence();
-        }
-    }
+				SpellHelper.Summon( new EarthElemental(), Caster, 0x217, duration, false, false );
+			}
+
+			FinishSequence();
+		}
+	}
 }

@@ -1,317 +1,267 @@
 using System;
-using System.Collections.Generic;
-using Server.Items;
-using Server.Mobiles;
+using System.Collections;
+using Server;
 using Server.Spells;
 using Server.Spells.Necromancy;
-using Server.Spells.Ninjitsu;
+using Server.Mobiles;
+using Server.Items;
+using Server.Spells.ExoticWeaponry;
 
-namespace Server.Spells.Ninjitsu
+namespace Server.Spells.ExoticWeaponry
 {
-    public class MirrorImage : NinjaSpell
-    {
-        private static readonly Dictionary<Mobile, int> m_CloneCount = new Dictionary<Mobile, int>();
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Mirror Image", null,
-            -1,
-            9002);
-        public MirrorImage(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class MirrorImage : NinjaSpell
+	{
+		private static Hashtable m_CloneCount = new Hashtable();
 
-        public override TimeSpan CastDelayBase
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(1.5);
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return Core.ML ? 20.0 : 40.0;
-            }
-        }
-        public override int RequiredMana
-        {
-            get
-            {
-                return 10;
-            }
-        }
-        public override bool BlockedByAnimalForm
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public static bool HasClone(Mobile m)
-        {
-            return m_CloneCount.ContainsKey(m);
-        }
+		public static bool HasClone( Mobile m )
+		{
+			return (m_CloneCount.Contains( m ) && ((int)m_CloneCount[m]) > 0);
+		}
 
-        public static void AddClone(Mobile m)
-        {
-            if (m == null)
-                return;
+		public static void AddClone( Mobile m )
+		{
+			if( m == null )
+				return;
 
-            if (m_CloneCount.ContainsKey(m))
-                m_CloneCount[m]++;
-            else
-                m_CloneCount[m] = 1;
-        }
+			if( m_CloneCount.Contains( m ) )
+				m_CloneCount[m] = ((int)m_CloneCount[m] +1);
+			else
+				m_CloneCount.Add( m, 1 );
+		}
 
-        public static void RemoveClone(Mobile m)
-        {
-            if (m == null)
-                return;
+		public static void RemoveClone( Mobile m )
+		{
+			if( m == null )
+				return;
 
-            if (m_CloneCount.ContainsKey(m))
-            {
-                m_CloneCount[m]--;
+			if( m_CloneCount.Contains( m ) )
+			{
+				m_CloneCount[m] = ((int)m_CloneCount[m] -1);
 
-                if (m_CloneCount[m] == 0)
-                    m_CloneCount.Remove(m);
-            }
-        }
+				if( ((int)m_CloneCount[m]) <= 0 )
+					m_CloneCount.Remove( m );
+			}
+		}
 
-        public override bool CheckCast()
-        {
-            if (this.Caster.Mounted)
-            {
-                this.Caster.SendLocalizedMessage(1063132); // You cannot use this ability while mounted.
-                return false;
-            }
-            else if ((this.Caster.Followers + 1) > this.Caster.FollowersMax)
-            {
-                this.Caster.SendLocalizedMessage(1063133); // You cannot summon a mirror image because you have too many followers.
-                return false;
-            }
-            else if (TransformationSpellHelper.UnderTransformation(this.Caster, typeof(HorrificBeastSpell)))
-            {
-                this.Caster.SendLocalizedMessage(1061091); // You cannot cast that spell in this form.
-                return false;
-            }
+		private static SpellInfo m_Info = new SpellInfo(
+			"Mirror Image", null,
+			SpellCircle.Sixth, // 1.5s base cast delay
+			-1,
+			9002
+			);
 
-            return base.CheckCast();
-        }
+		public override double RequiredSkill{ get{ return 40.0; } }
+		public override int RequiredMana{ get{ return 10; } }
 
-        public override bool CheckDisturb(DisturbType type, bool firstCircle, bool resistable)
-        {
-            return false;
-        }
+		public override bool BlockedByAnimalForm{ get{ return false; } }
 
-        public override void OnBeginCast()
-        {
-            base.OnBeginCast();
+		public MirrorImage( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-            this.Caster.SendLocalizedMessage(1063134); // You begin to summon a mirror image of yourself.
-        }
+		public override bool CheckCast()
+		{
+			if ( Caster.Mounted )
+			{
+				Caster.SendLocalizedMessage( 1063132 ); // You cannot use this ability while mounted.
+				return false;
+			}
+			else if ( (Caster.Followers + 1) > Caster.FollowersMax )
+			{
+				Caster.SendLocalizedMessage( 1063133 ); // You cannot summon a mirror image because you have too many followers.
+				return false;
+			}
+			else if ( Necromancy.TransformationSpell.UnderTransformation( Caster, typeof( HorrificBeastSpell ) ) )
+			{
+				Caster.SendLocalizedMessage( 1061091 ); // You cannot cast that spell in this form.
+				return false;
+			}
 
-        public override void OnCast()
-        {
-            if (this.Caster.Mounted)
-            {
-                this.Caster.SendLocalizedMessage(1063132); // You cannot use this ability while mounted.
-            }
-            else if ((this.Caster.Followers + 1) > this.Caster.FollowersMax)
-            {
-                this.Caster.SendLocalizedMessage(1063133); // You cannot summon a mirror image because you have too many followers.
-            }
-            else if (TransformationSpellHelper.UnderTransformation(this.Caster, typeof(HorrificBeastSpell)))
-            {
-                this.Caster.SendLocalizedMessage(1061091); // You cannot cast that spell in this form.
-            }
-            else if (this.CheckSequence())
-            {
-                this.Caster.FixedParticles(0x376A, 1, 14, 0x13B5, EffectLayer.Waist);
-                this.Caster.PlaySound(0x511);
+			return base.CheckCast();
+		}
 
-                new Clone(this.Caster).MoveToWorld(this.Caster.Location, this.Caster.Map);
-            }
+		public override bool CheckDisturb( DisturbType type, bool firstCircle, bool resistable )
+		{
+			return false;
+		}
 
-            this.FinishSequence();
-        }
-    }
+		public override void OnBeginCast()
+		{
+			base.OnBeginCast();
+
+			Caster.SendLocalizedMessage( 1063134 ); // You begin to summon a mirror image of yourself.
+		}
+
+		public override void OnCast()
+		{
+			if ( Caster.Mounted )
+			{
+				Caster.SendLocalizedMessage( 1063132 ); // You cannot use this ability while mounted.
+			}
+			else if ( (Caster.Followers + 1) > Caster.FollowersMax )
+			{
+				Caster.SendLocalizedMessage( 1063133 ); // You cannot summon a mirror image because you have too many followers.
+			}
+			else if ( Necromancy.TransformationSpell.UnderTransformation( Caster, typeof( HorrificBeastSpell ) ) )
+			{
+				Caster.SendLocalizedMessage( 1061091 ); // You cannot cast that spell in this form.
+			}
+			else if ( CheckSequence() )
+			{
+				Caster.FixedParticles( 0x376A, 1, 14, 0x13B5, EffectLayer.Waist );
+				Caster.PlaySound( 0x511 );
+
+				new Clone( Caster ).MoveToWorld( Caster.Location, Caster.Map );
+			}
+
+			FinishSequence();
+		}
+	}
 }
 
 namespace Server.Mobiles
 {
-    public class Clone : BaseCreature
-    {
-        private Mobile m_Caster;
-        public Clone(Mobile caster)
-            : base(AIType.AI_Melee, FightMode.None, 10, 1, 0.2, 0.4)
-        {
-            this.m_Caster = caster;
+	public class Clone : BaseCreature
+	{
+		private Mobile m_Caster;
 
-            this.Body = caster.Body;
+		public Clone( Mobile caster ) : base( AIType.AI_Melee, FightMode.None, 10, 1, 0.2, 0.4 )
+		{
+			m_Caster = caster;
+			PlayerMobile castpm = caster as PlayerMobile;
 
-            this.Hue = caster.Hue;
-            this.Female = caster.Female;
+			Body = caster.Body;
 
-            this.Name = caster.Name;
-            this.NameHue = caster.NameHue;
+			Hue = caster.Hue;
+			Female = caster.Female;
+			
+			Direction = caster.Direction;
 
-            this.Title = caster.Title;
-            this.Kills = caster.Kills;
+			Name = castpm.TitlePrefix + " " + caster.Name;
+			
+			if (castpm.IsHardcore )
+            Kills = 100000;
 
-            this.HairItemID = caster.HairItemID;
-            this.HairHue = caster.HairHue;
+			Title = castpm.RPTitle;
+			
 
-            this.FacialHairItemID = caster.FacialHairItemID;
-            this.FacialHairHue = caster.FacialHairHue;
+			HairItemID = caster.HairItemID;
+			HairHue = caster.HairHue;
 
-            for (int i = 0; i < caster.Skills.Length; ++i)
-            {
-                this.Skills[i].Base = caster.Skills[i].Base;
-                this.Skills[i].Cap = caster.Skills[i].Cap;
-            }
+			FacialHairItemID = caster.FacialHairItemID;
+			FacialHairHue = caster.FacialHairHue;
 
-            for (int i = 0; i < caster.Items.Count; i++)
-            {
-                this.AddItem(this.CloneItem(caster.Items[i]));
-            }
+			for( int i = 0; i < caster.Items.Count; i++ )
+			{
+				AddItem( CloneItem( caster.Items[i] ) );
+			}
 
-            this.Warmode = true;
+			Warmode = false;
 
-            this.Summoned = true;
-            this.SummonMaster = caster;
+			Summoned = false;
+			SummonMaster = caster;
+			Frozen = true;
 
-            this.ControlOrder = OrderType.Follow;
-            this.ControlTarget = caster;
+			ControlOrder = OrderType.Follow;
+			ControlTarget = caster;
 
-            TimeSpan duration = TimeSpan.FromSeconds(30 + caster.Skills.Ninjitsu.Fixed / 40);
+			TimeSpan duration = TimeSpan.FromMinutes( 10 );
 
-            new UnsummonTimer(caster, this, duration).Start();
-            this.SummonEnd = DateTime.UtcNow + duration;
+			new UnsummonTimer( caster, this, duration ).Start();
+			SummonEnd = DateTime.Now + duration;
 
-            MirrorImage.AddClone(this.m_Caster);
-        }
+			MirrorImage.AddClone( m_Caster );
+		}
 
-        public Clone(Serial serial)
-            : base(serial)
-        {
-        }
+		protected override BaseAI ForcedAI { get { return new CloneAI( this ); } }
 
-        public override bool DeleteCorpseOnDeath
-        {
-            get
-            {
-                return true;
-            }
-        }
-        public override bool IsDispellable
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override bool Commandable
-        {
-            get
-            {
-                return false;
-            }
-        }
-        protected override BaseAI ForcedAI
-        {
-            get
-            {
-                return new CloneAI(this);
-            }
-        }
-        public override bool IsHumanInTown()
-        {
-            return false;
-        }
+		public override bool IsHumanInTown() { return false; }
 
-        public override void OnDamage(int amount, Mobile from, bool willKill)
-        {
-            this.Delete();
-        }
+		private Item CloneItem( Item item )
+		{
+			Item newItem = new Item( item.ItemID );
+			newItem.Name = item.Name;
+			newItem.Hue = item.Hue;
+			newItem.Layer = item.Layer;
+			newItem.Movable = false;
+			return newItem;
+		}
 
-        public override void OnDelete()
-        {
-            Effects.SendLocationParticles(EffectItem.Create(this.Location, this.Map, EffectItem.DefaultDuration), 0x3728, 10, 15, 5042);
+		public override void OnDamage( int amount, Mobile from, bool willKill )
+		{
+			Delete();
+		}
 
-            base.OnDelete();
-        }
+		public override bool DeleteCorpseOnDeath { get { return true; } }
 
-        public override void OnAfterDelete()
-        {
-            MirrorImage.RemoveClone(this.m_Caster);
-            base.OnAfterDelete();
-        }
+		public override void OnDelete()
+		{
+			Effects.SendLocationParticles( EffectItem.Create( Location, Map, EffectItem.DefaultDuration ), 0x3728, 10, 15, 5042 );
 
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			base.OnDelete();
+		}
 
-            writer.WriteEncodedInt(0); // version
+		public override void OnAfterDelete()
+		{
+			MirrorImage.RemoveClone( m_Caster );
+			base.OnAfterDelete();
+		}
 
-            writer.Write(this.m_Caster);
-        }
+		public override bool IsDispellable { get { return false; } }
+		public override bool Commandable { get { return false; } }
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public Clone( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadEncodedInt();
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            this.m_Caster = reader.ReadMobile();
+			writer.WriteEncodedInt( 0 ); // version
 
-            MirrorImage.AddClone(this.m_Caster);
-        }
+			writer.Write( m_Caster );
+		}
 
-        private Item CloneItem(Item item)
-        {
-            Item newItem = new Item(item.ItemID);
-            newItem.Hue = item.Hue;
-            newItem.Layer = item.Layer;
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-            return newItem;
-        }
-    }
+			int version = reader.ReadEncodedInt();
+
+			m_Caster = reader.ReadMobile();
+
+			MirrorImage.AddClone( m_Caster );
+		}
+	}
 }
+
 
 namespace Server.Mobiles
 {
-    public class CloneAI : BaseAI
-    {
-        public CloneAI(Clone m)
-            : base(m)
-        {
-            m.CurrentSpeed = m.ActiveSpeed;
-        }
+	public class CloneAI : BaseAI
+	{
+		public CloneAI( Clone m ) : base ( m )
+		{
+			m.CurrentSpeed = m.ActiveSpeed;
+		}
 
-        public override bool CanDetectHidden
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override bool Think()
-        {
-            // Clones only follow their owners
-            Mobile master = this.m_Mobile.SummonMaster;
+		public override bool Think()
+		{
+			// Clones only follow their owners
+			Mobile master = m_Mobile.SummonMaster;
 
-            if (master != null && master.Map == this.m_Mobile.Map && master.InRange(this.m_Mobile, this.m_Mobile.RangePerception))
-            {
-                int iCurrDist = (int)this.m_Mobile.GetDistanceToSqrt(master);
-                bool bRun = (iCurrDist > 5);
+			if ( master != null && master.Map == m_Mobile.Map && master.InRange( m_Mobile, m_Mobile.RangePerception ) )
+			{
+				int iCurrDist = (int)m_Mobile.GetDistanceToSqrt( master );
+				bool bRun = (iCurrDist > 5);
 
-                this.WalkMobileRange(master, 2, bRun, 0, 1);
-            }
-            else
-                this.WalkRandom(2, 2, 1);
+				WalkMobileRange( master, 2, bRun, 0, 1 );
+			}
+			else
+				WalkRandom( 2, 2, 1 );
 
-            return true;
-        }
-    }
+			return true;
+		}
+	}
 }

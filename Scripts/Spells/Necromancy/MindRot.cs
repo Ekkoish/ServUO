@@ -1,200 +1,143 @@
 using System;
 using System.Collections;
+using Server.Network;
+using Server.Mobiles;
 using Server.Targeting;
-using Server.Spells.SkillMasteries;
 
 namespace Server.Spells.Necromancy
 {
-    public class MindRotSpell : NecromancerSpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Mind Rot", "Wis An Ben",
-            203,
-            9031,
-            Reagent.BatWing,
-            Reagent.PigIron,
-            Reagent.DaemonBlood);
-        private static readonly Hashtable m_Table = new Hashtable();
-        public MindRotSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class MindRotSpell : NecromancerSpell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Mind Rot", "Wis An Ben",
+				SpellCircle.Fourth, // 0.5 + 1.0 = 1.5s base cast delay
+				203,
+				9031,
+				Reagent.BatWing,
+				Reagent.PigIron,
+				Reagent.DaemonBlood
+			);
 
-        public override TimeSpan CastDelayBase
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(1.5);
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return 30.0;
-            }
-        }
-        public override int RequiredMana
-        {
-            get
-            {
-                return 17;
-            }
-        }
-        public static void ClearMindRotScalar(Mobile m)
-        {
-            if (!m_Table.ContainsKey(m))
-                return;
+		public override double RequiredSkill{ get{ return 30.0; } }
+		public override int RequiredMana{ get{ return 17; } }
 
-            BuffInfo.RemoveBuff(m, BuffIcon.Mindrot);
-            MRBucket tmpB = (MRBucket)m_Table[m];
-            MRExpireTimer tmpT = (MRExpireTimer)tmpB.m_MRExpireTimer;
-            tmpT.Stop();
-            m_Table.Remove(m);
-            m.SendLocalizedMessage(1060872); // Your mind feels normal again.
-        }
+		public MindRotSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public static bool HasMindRotScalar(Mobile m)
-        {
-            return m_Table.ContainsKey(m);
-        }
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-        public static bool GetMindRotScalar(Mobile m, ref double scalar)
-        {
-            if (!m_Table.ContainsKey(m))
-                return false;
+		public void Target( Mobile m )
+		{
+			if ( HasMindRotScalar( m ) )
+			{
+				Caster.SendLocalizedMessage( 1005559 ); // This spell is already in effect.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-            MRBucket tmpB = (MRBucket)m_Table[m];
-            scalar = tmpB.m_Scalar;
-            return true;
-        }
+				/* Attempts to place a curse on the Target that increases the mana cost of any spells they cast,
+				 * for a duration based off a comparison between the Caster's Spirit Speak skill and the Target's Resisting Spells skill.
+				 * The effect lasts for ((Spirit Speak skill level - target's Resist Magic skill level) / 50 ) + 20 seconds.
+				 */
 
-        public static void SetMindRotScalar(Mobile caster, Mobile target, double scalar, TimeSpan duration)
-        {
-            if (!m_Table.ContainsKey(target))
-            {
-                m_Table.Add(target, new MRBucket(scalar, new MRExpireTimer(caster, target, duration)));
-                BuffInfo.AddBuff(target, new BuffInfo(BuffIcon.Mindrot, 1075665, duration, target));
-                MRBucket tmpB = (MRBucket)m_Table[target];
-                MRExpireTimer tmpT = (MRExpireTimer)tmpB.m_MRExpireTimer;
-                tmpT.Start();
-                target.SendLocalizedMessage(1074384);
-            }
-        }
+				m.PlaySound( 0x1FB );
+				m.PlaySound( 0x258 );
+				m.FixedParticles( 0x373A, 1, 17, 9903, 15, 4, EffectLayer.Head );
 
-        public override void OnCast()
-        {
-            Caster.Target = new InternalTarget(this);
-        }
+				TimeSpan duration = TimeSpan.FromSeconds( (((GetDamageSkill( Caster ) - GetResistSkill( m )) / 5.0) + 20.0) * (m.Player ? 1.0 : 2.0 ) );
 
-        public void Target(Mobile m)
-        {
-            if (HasMindRotScalar(m))
-            {
-                Caster.SendLocalizedMessage(1005559); // This spell is already in effect.
-            }
-            else if (CheckHSequence(m))
-            {
-                SpellHelper.Turn(Caster, m);
+				if ( m.Player )
+					SetMindRotScalar( Caster, m, 1.25, duration );
+				else
+					SetMindRotScalar( Caster, m, 2.00, duration );
+			}
 
-                ApplyEffects(m);
-                ConduitSpell.CheckAffected(Caster, m, ApplyEffects);
-            }
+			FinishSequence();
+		}
 
-            FinishSequence();
-        }
+		private static Hashtable m_Table = new Hashtable();
 
-        public void ApplyEffects(Mobile m, double strength = 1.0)
-        {
-            /* Attempts to place a curse on the Target that increases the mana cost of any spells they cast,
-                * for a duration based off a comparison between the Caster's Spirit Speak skill and the Target's Resisting Spells skill.
-                * The effect lasts for ((Spirit Speak skill level - target's Resist Magic skill level) / 50 ) + 20 seconds.
-                */
+		public static void ClearMindRotScalar( Mobile m )
+		{
+			m_Table.Remove( m );
+			BuffInfo.RemoveBuff( m, BuffIcon.Mindrot );
+		}
 
-            if (m.Spell != null)
-                m.Spell.OnCasterHurt();
+		public static bool HasMindRotScalar( Mobile m )
+		{
+			return m_Table.Contains( m );
+		}
 
-            m.PlaySound(0x1FB);
-            m.PlaySound(0x258);
-            m.FixedParticles(0x373A, 1, 17, 9903, 15, 4, EffectLayer.Head);
+		public static bool GetMindRotScalar( Mobile m, ref double scalar )
+		{
+			object obj = m_Table[m];
 
-            TimeSpan duration = TimeSpan.FromSeconds(((((GetDamageSkill(Caster) - GetResistSkill(m)) / 5.0) + 20.0) * (m.Player ? 1.0 : 2.0)) * strength);
-            m.CheckSkill(SkillName.MagicResist, 0.0, 120.0);	//Skill check for gain
+			if ( obj == null )
+				return false;
 
-            if (m.Player)
-                SetMindRotScalar(Caster, m, 1.25 * strength, duration);
-            else
-                SetMindRotScalar(Caster, m, 2.00 * strength, duration);
+			scalar = (double)obj;
+			return true;
+		}
 
-            HarmfulSpell(m);
-        }
+		public static void SetMindRotScalar( Mobile caster, Mobile target, double scalar, TimeSpan duration )
+		{
+			m_Table[target] = scalar;
+			BuffInfo.AddBuff( target, new BuffInfo( BuffIcon.Mindrot, 1075665, duration, target  ) );
+			new ExpireTimer( caster, target, duration ).Start();
+		}
 
-        private class InternalTarget : Target
-        {
-            private readonly MindRotSpell m_Owner;
-            public InternalTarget(MindRotSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                m_Owner = owner;
-            }
+		private class ExpireTimer : Timer
+		{
+			private Mobile m_Caster;
+			private Mobile m_Target;
+			private DateTime m_End;
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is Mobile)
-                    m_Owner.Target((Mobile)o);
-                else
-                    from.SendLocalizedMessage(1060508); // You can't curse that.
-            }
+			public ExpireTimer( Mobile caster, Mobile target, TimeSpan delay ) : base( TimeSpan.FromSeconds( 1.0 ), TimeSpan.FromSeconds( 1.0 ) )
+			{
+				m_Caster = caster;
+				m_Target = target;
+				m_End = DateTime.Now + delay;
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                m_Owner.FinishSequence();
-            }
-        }
-    }
+				Priority = TimerPriority.TwoFiftyMS;
+			}
 
-    public class MRExpireTimer : Timer
-    {
-        private readonly Mobile m_Caster;
-        private readonly Mobile m_Target;
-        private DateTime m_End;
-        public MRExpireTimer(Mobile caster, Mobile target, TimeSpan delay)
-            : base(TimeSpan.FromSeconds(1.0), TimeSpan.FromSeconds(1.0))
-        {
-            m_Caster = caster;
-            m_Target = target;
-            m_End = DateTime.UtcNow + delay;
-            Priority = TimerPriority.TwoFiftyMS;
-        }
+			protected override void OnTick()
+			{
+				if ( m_Target.Deleted || !m_Target.Alive || DateTime.Now >= m_End )
+				{
+					m_Target.SendLocalizedMessage( 1060872 ); // Your mind feels normal again.
+					ClearMindRotScalar( m_Target );
+					Stop();
+				}
+			}
+		}
 
-        public void RenewDelay(TimeSpan delay)
-        {
-            m_End = DateTime.UtcNow + delay;
-        }
+		private class InternalTarget : Target
+		{
+			private MindRotSpell m_Owner;
 
-        public void Halt()
-        {
-            Stop();
-        }
+			public InternalTarget( MindRotSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
 
-        protected override void OnTick()
-        {
-            if (m_Target.Deleted || !m_Target.Alive || DateTime.UtcNow >= m_End)
-            {
-                MindRotSpell.ClearMindRotScalar(m_Target);
-                Stop();
-            }
-        }
-    }
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+					m_Owner.Target( (Mobile) o );
+				else
+					from.SendLocalizedMessage( 1060508 ); // You can't curse that.
+			}
 
-    public class MRBucket
-    {
-        public double m_Scalar;
-        public MRExpireTimer m_MRExpireTimer;
-        public MRBucket(double theScalar, MRExpireTimer theTimer)
-        {
-            m_Scalar = theScalar;
-            m_MRExpireTimer = theTimer;
-        }
-    }
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

@@ -1,128 +1,81 @@
 using System;
 using Server.Targeting;
-using System.Collections.Generic;
+using Server.Network;
 
 namespace Server.Spells.First
 {
-    public class FeeblemindSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Feeblemind", "Rel Wis",
-            212,
-            9031,
-            Reagent.Ginseng,
-            Reagent.Nightshade);
-        public FeeblemindSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class FeeblemindSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Feeblemind", "Rel Wis",
+				SpellCircle.First,
+				212,
+				9031,
+				Reagent.Ginseng,
+				Reagent.Nightshade
+			);
 
-        public static Dictionary<Mobile, Timer> m_Table = new Dictionary<Mobile, Timer>();
+		public FeeblemindSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public static bool IsUnderEffects(Mobile m)
-        {
-            return m_Table.ContainsKey(m);
-        }
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-        public static void RemoveEffects(Mobile m, bool removeMod = true)
-        {
-            if (m_Table.ContainsKey(m))
-            {
-                Timer t = m_Table[m];
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-                if (t != null && t.Running)
-                {
-                    t.Stop();
-                }
+				SpellHelper.CheckReflect( (int)this.Circle, Caster, ref m );
 
-                BuffInfo.RemoveBuff(m, BuffIcon.FeebleMind);
+				SpellHelper.AddStatCurse( Caster, m, StatType.Int );
 
-                if (removeMod)
-                    m.RemoveStatMod("[Magic] Int Curse");
+				if ( m.Spell != null )
+					m.Spell.OnCasterHurt();
 
-                m_Table.Remove(m);
-            }
-        }
+				m.Paralyzed = false;
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.First;
-            }
-        }
-        public override void OnCast()
-        {
-            Caster.Target = new InternalTarget(this);
-        }
+				m.FixedParticles( 0x3779, 10, 15, 5004, EffectLayer.Head );
+				m.PlaySound( 0x1E4 );
 
-        public void Target(Mobile m)
-        {
-            if (!Caster.CanSee(m))
-            {
-                Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (CheckHSequence(m))
-            {
-                SpellHelper.Turn(Caster, m);
+				int percentage = (int)(SpellHelper.GetOffsetScalar( Caster, m, true )*100);
+				TimeSpan length = SpellHelper.GetDuration( Caster, m );
 
-                SpellHelper.CheckReflect((int)Circle, Caster, ref m);
+				BuffInfo.AddBuff( m, new BuffInfo( BuffIcon.FeebleMind, 1075833, length, m, percentage.ToString() ) );
+			}
 
-                int oldOffset = SpellHelper.GetCurseOffset(m, StatType.Int);
-				SpellHelper.AddStatCurse(Caster, m, StatType.Int, false);
-                int newOffset = SpellHelper.GetCurseOffset(m, StatType.Int);
+			FinishSequence();
+		}
 
-				if (m.Spell != null)
-                    m.Spell.OnCasterHurt();
+		private class InternalTarget : Target
+		{
+			private FeeblemindSpell m_Owner;
 
-                m.Paralyzed = false;
+			public InternalTarget( FeeblemindSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
 
-                m.FixedParticles(0x3779, 10, 15, 5004, EffectLayer.Head);
-                m.PlaySound(0x1E4);
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+				{
+					m_Owner.Target( (Mobile)o );
+				}
+			}
 
-                HarmfulSpell(m);
-
-                if (newOffset < oldOffset)
-                {
-                    int percentage = (int)(SpellHelper.GetOffsetScalar(Caster, m, true) * 100);
-                    TimeSpan length = SpellHelper.GetDuration(Caster, m);
-
-                    BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.FeebleMind, 1075833, length, m, percentage.ToString()));
-
-                    if (m_Table.ContainsKey(m))
-                        m_Table[m].Stop();
-
-                    m_Table[m] = Timer.DelayCall(length, () =>
-                    {
-                        RemoveEffects(m);
-                    });
-                }
-            }
-
-            FinishSequence();
-        }
-
-        private class InternalTarget : Target
-        {
-            private readonly FeeblemindSpell m_Owner;
-            public InternalTarget(FeeblemindSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                m_Owner = owner;
-            }
-
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is Mobile)
-                {
-                    m_Owner.Target((Mobile)o);
-                }
-            }
-
-            protected override void OnTargetFinish(Mobile from)
-            {
-                m_Owner.FinishSequence();
-            }
-        }
-    }
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

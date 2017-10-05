@@ -1,94 +1,73 @@
 using System;
+using System.Collections;
+using Server.Network;
+using Server.Items;
+using Server.Mobiles;
+using Server.Targeting;
 using Server.SkillHandlers;
 
-namespace Server.Spells.Ninjitsu
+namespace Server.Spells.ExoticWeaponry
 {
-    public class Backstab : NinjaMove
-    {
-        public Backstab()
-        {
-        }
+	public class Backstab : NinjaMove
+	{
+		// TODO: Cannot hide for 5s
 
-        public override int BaseMana
-        {
-            get
-            {
-                return 30;
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return Core.ML ? 40.0 : 20.0;
-            }
-        }
-        public override TextDefinition AbilityMessage
-        {
-            get
-            {
-                return new TextDefinition(1063089);
-            }
-        }// You prepare to Backstab your opponent.
-        public override bool ValidatesDuringHit
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override double GetDamageScalar(Mobile attacker, Mobile defender)
-        {
-            double ninjitsu = attacker.Skills[SkillName.Ninjitsu].Value;
+		public Backstab()
+		{
+		}
 
-            return 1.0 + (ninjitsu / 360) + Tracking.GetStalkingBonus(attacker, defender) / 100;
-        }
+		public override int BaseMana{ get{ return 30; } }
+		public override double RequiredSkill{ get{ return 20.0; } }
 
-        public override bool Validate(Mobile from)
-        {
-            if (!from.Hidden || from.AllowedStealthSteps <= 0)
-            {
-                from.SendLocalizedMessage(1063087); // You must be in stealth mode to use this ability.
-                return false;
-            }
+		public override TextDefinition AbilityMessage{ get{ return new TextDefinition( 1063089 ); } } // You prepare to Backstab your opponent.
 
-            return base.Validate(from);
-        }
+		public override double GetDamageScalar( Mobile attacker, Mobile defender )
+		{
+			double ExoticWeaponry = attacker.Skills[SkillName.ExoticWeaponry].Value;
 
-        public override bool OnBeforeSwing(Mobile attacker, Mobile defender)
-        {
-            bool valid = this.Validate(attacker) && this.CheckMana(attacker, true);
+			return 1.0 + (ExoticWeaponry / 360) + Tracking.GetStalkingBonus( attacker, defender ) / 100;
+		}
 
-            if (valid)
-            {
-                attacker.BeginAction(typeof(Stealth));
-                Timer.DelayCall(TimeSpan.FromSeconds(5.0), delegate { attacker.EndAction(typeof(Stealth)); });
-            }
+		public override bool Validate( Mobile from )
+		{
+			if( !from.Hidden || from.AllowedStealthSteps <= 0 )
+			{
+				from.SendLocalizedMessage( 1063087 ); // You must be in stealth mode to use this ability.
+				return false;
+			}
 
-            return valid;
-        }
+			return base.Validate( from );
+		}
 
-        public override void OnHit(Mobile attacker, Mobile defender, int damage)
-        {
-            //Validates before swing
-            ClearCurrentMove(attacker);
+		public override bool OnBeforeSwing( Mobile attacker, Mobile defender )
+		{
+			return Validate( attacker ) && CheckMana( attacker, true );
+		}
 
-            attacker.SendLocalizedMessage(1063090); // You quickly stab your opponent as you come out of hiding!
+		public override bool ValidatesDuringHit { get { return false; } }
 
-            defender.FixedParticles(0x37B9, 1, 5, 0x251D, 0x651, 0, EffectLayer.Waist);						
+		public override void OnHit( Mobile attacker, Mobile defender, int damage )
+		{
+			//Validates before swing
+			
+			ClearCurrentMove( attacker );
 
-            attacker.RevealingAction();
+			attacker.SendLocalizedMessage( 1063090 ); // You quickly stab your opponent as you come out of hiding!
 
-            this.CheckGain(attacker);
-        }
+			defender.FixedParticles( 0x37B9, 1, 5, 0x251D, 0x651, 0, EffectLayer.Waist );						
 
-        public override void OnMiss(Mobile attacker, Mobile defender)
-        {
-            ClearCurrentMove(attacker);
+			attacker.RevealingAction();
 
-            attacker.SendLocalizedMessage(1063161); // You failed to properly use the element of surprise.
+			CheckGain( attacker );
+		}
 
-            attacker.RevealingAction();
-        }
-    }
+		public override void OnMiss( Mobile attacker, Mobile defender )
+		{
+			ClearCurrentMove( attacker );
+
+			attacker.SendLocalizedMessage( 1063161 ); // You failed to properly use the element of surprise.
+
+			attacker.RevealingAction();
+		}
+	}
 }

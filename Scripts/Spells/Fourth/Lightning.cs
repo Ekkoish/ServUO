@@ -1,106 +1,90 @@
 using System;
 using Server.Targeting;
+using Server.Network;
 
 namespace Server.Spells.Fourth
 {
-    public class LightningSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Lightning", "Por Ort Grav",
-            239,
-            9021,
-            Reagent.MandrakeRoot,
-            Reagent.SulfurousAsh);
-        public LightningSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class LightningSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Lightning", "Por Ort Grav",
+				SpellCircle.Fourth,
+				239,
+				9021,
+				Reagent.MandrakeRoot,
+				Reagent.SulfurousAsh
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Fourth;
-            }
-        }
-        public override bool DelayedDamage
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+		public LightningSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IDamageable m)
-        {
-            Mobile mob = m as Mobile;
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-            if (!this.Caster.CanSee(m))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (this.CheckHSequence(m))
-            {
-                SpellHelper.Turn(this.Caster, m);
-                Mobile source = this.Caster;
+		public override bool DelayedDamage{ get{ return false; } }
 
-                if(mob != null)
-                    SpellHelper.CheckReflect((int)this.Circle, ref source, ref mob);
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-                double damage = 0;
+				SpellHelper.CheckReflect( (int)this.Circle, Caster, ref m );
 
-                if (Core.AOS)
-                {
-                    damage = this.GetNewAosDamage(23, 1, 4, m);
-                }
-                else if (mob != null)
-                {
-                    damage = Utility.Random(12, 9);
+				double damage;
 
-                    if (this.CheckResisted(mob))
-                    {
-                        damage *= 0.75;
+				if ( Core.AOS )
+				{
+					damage = GetNewAosDamage( 23, 1, 4, m );
+				}
+				else
+				{
+					damage = Utility.Random( 12, 9 );
 
-                        mob.SendLocalizedMessage(501783); // You feel yourself resisting magical energy.
-                    }
+					if ( CheckResisted( m ) )
+					{
+						damage *= 0.75;
 
-                    damage *= this.GetDamageScalar(mob);
-                }
+						m.SendLocalizedMessage( 501783 ); // You feel yourself resisting magical energy.
+					}
 
-                Effects.SendBoltEffect(m, true, 0);
+					damage *= GetDamageScalar( m );
+				}
 
-                if (damage > 0)
-                {
-                    SpellHelper.Damage(this, mob != null ? mob : m, damage, 0, 0, 0, 0, 100);
-                }
-            }
+				m.BoltEffect( 0 );
 
-            this.FinishSequence();
-        }
+				SpellHelper.Damage( this, m, damage, 0, 0, 0, 0, 100 );
+			}
 
-        private class InternalTarget : Target
-        {
-            private readonly LightningSpell m_Owner;
-            public InternalTarget(LightningSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                this.m_Owner = owner;
-            }
+			FinishSequence();
+		}
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IDamageable)
-                    this.m_Owner.Target((IDamageable)o);
-            }
+		private class InternalTarget : Target
+		{
+			private LightningSpell m_Owner;
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			public InternalTarget( LightningSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+					m_Owner.Target( (Mobile)o );
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

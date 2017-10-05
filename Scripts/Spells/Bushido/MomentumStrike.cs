@@ -1,104 +1,75 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
+using Server.Network;
 using Server.Items;
+using Server.Mobiles;
+using Server.Targeting;
 
 namespace Server.Spells.Bushido
 {
-    public class MomentumStrike : SamuraiMove
-    {
-        public MomentumStrike()
-        {
-        }
+	public class MomentumStrike : SamuraiMove
+	{
+		public MomentumStrike()
+		{
+		}
 
-        public override int BaseMana
-        {
-            get
-            {
-                return 10;
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return 70.0;
-            }
-        }
-        public override TextDefinition AbilityMessage
-        {
-            get
-            {
-                return new TextDefinition(1070757);
-            }
-        }// You prepare to strike two enemies with one blow.
-        public override void OnHit(Mobile attacker, Mobile defender, int damage)
-        {
-            if (!this.Validate(attacker) || !this.CheckMana(attacker, false))
-                return;
+		public override int BaseMana{ get{ return 10; } }
+		public override double RequiredSkill{ get{ return 70.0; } }
 
-            ClearCurrentMove(attacker);
+		public override TextDefinition AbilityMessage{ get{ return new TextDefinition( 1070757 ); } } // You prepare to strike two enemies with one blow.
 
-            BaseWeapon weapon = attacker.Weapon as BaseWeapon;
+		public override void OnHit( Mobile attacker, Mobile defender, int damage )
+		{
+			if ( !Validate( attacker ) || !CheckMana( attacker, false ) )
+				return;
 
-            List<Mobile> targets = new List<Mobile>();
+			ClearCurrentMove( attacker );
 
-            foreach (Mobile m in attacker.GetMobilesInRange(weapon.MaxRange))
-            {
-                if (m == defender)
-                    continue;
+			BaseWeapon weapon = attacker.Weapon as BaseWeapon;
 
-                if (m.Combatant != attacker)
-                    continue;
+			ArrayList targets = new ArrayList();
 
-                targets.Add(m);
-            }
+			foreach ( Mobile m in attacker.GetMobilesInRange( weapon.MaxRange ) )
+			{
+				if ( m == defender )
+					continue;
 
-            if (targets.Count > 0)
-            {
-                if (!this.CheckMana(attacker, true))
-                    return;
+				if ( m.Combatant != attacker )
+					continue;
 
-                Mobile target = targets[Utility.Random(targets.Count)];
+				targets.Add( m );
+			}
 
-                double damageBonus = attacker.Skills[SkillName.Bushido].Value / 100.0;
+			if ( targets.Count > 0 )
+			{
+				if ( !CheckMana( attacker, true ) )
+					return;
 
-                if (!defender.Alive)
-                    damageBonus *= 1.5;
+				Mobile target = (Mobile)targets[Utility.Random( targets.Count )];
 
-                attacker.SendLocalizedMessage(1063171); // You transfer the momentum of your weapon into another enemy!
-                target.SendLocalizedMessage(1063172); // You were hit by the momentum of a Samurai's weapon!
+				double damageBonus = attacker.Skills[SkillName.Leadership].Value / 100.0;
 
-                target.FixedParticles(0x37B9, 1, 4, 0x251D, 0, 0, EffectLayer.Waist);
+				if ( !defender.Alive )
+					damageBonus *= 1.5;
 
-                attacker.PlaySound(0x510);
+				attacker.SendLocalizedMessage( 1063171 ); // You transfer the momentum of your weapon into another enemy!
+				target.SendLocalizedMessage( 1063172 ); // You were hit by the momentum of a Samurai's weapon!
 
-                weapon.OnSwing(attacker, target, damageBonus);
+				target.FixedParticles( 0x37B9, 1, 4, 0x251D, 0, 0, EffectLayer.Waist );
 
-                this.CheckGain(attacker);
-            }
-            else
-            {
-                attacker.SendLocalizedMessage(1063123); // There are no valid targets to attack!
-            }
-        }
+				weapon.OnSwing( attacker, target, damageBonus, false );
 
-        public override void OnUse(Mobile m)
-        {
-            base.OnUse(m);
+				CheckGain( attacker );
+			}
+			else
+			{
+				attacker.SendLocalizedMessage( 1063123 ); // There are no valid targets to attack!
+			}
+		}
 
-            BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.MomentumStrike, 1060600, 1063268));
-        }
-
-        public override void OnClearMove(Mobile from)
-        {
-            base.OnClearMove(from);
-
-            BuffInfo.RemoveBuff(from, BuffIcon.MomentumStrike);
-        }
-
-        public override void CheckGain(Mobile m)
-        {
-            m.CheckSkill(this.MoveSkill, this.RequiredSkill, 120.0);
-        }
-    }
+		public override void CheckGain( Mobile m )
+		{
+			m.CheckSkill( MoveSkill, RequiredSkill, 120.0 );
+		}
+	}
 }

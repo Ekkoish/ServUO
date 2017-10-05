@@ -1,127 +1,81 @@
 using System;
 using Server.Targeting;
-using System.Collections.Generic;
+using Server.Network;
 
 namespace Server.Spells.First
 {
-    public class ClumsySpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Clumsy", "Uus Jux",
-            212,
-            9031,
-            Reagent.Bloodmoss,
-            Reagent.Nightshade);
-        public ClumsySpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class ClumsySpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Clumsy", "Uus Jux",
+				SpellCircle.First,
+				212,
+				9031,
+				Reagent.Bloodmoss,
+				Reagent.Nightshade
+			);
 
-        public static Dictionary<Mobile, Timer> m_Table = new Dictionary<Mobile, Timer>();
+		public ClumsySpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public static bool IsUnderEffects(Mobile m)
-        {
-            return m_Table.ContainsKey(m);
-        }
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-        public static void RemoveEffects(Mobile m, bool removeMod = true)
-        {
-            if (m_Table.ContainsKey(m))
-            {
-                Timer t = m_Table[m];
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-                if (t != null && t.Running)
-                {
-                    t.Stop();
-                }
+				SpellHelper.CheckReflect( (int)this.Circle, Caster, ref m );
 
-                BuffInfo.RemoveBuff(m, BuffIcon.Clumsy);
+				SpellHelper.AddStatCurse( Caster, m, StatType.Dex );
 
-                if (removeMod)
-                    m.RemoveStatMod("[Magic] Dex Curse");
+				if ( m.Spell != null )
+					m.Spell.OnCasterHurt();
 
-                m_Table.Remove(m);
-            }
-        }
+				m.Paralyzed = false;
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.First;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+				m.FixedParticles( 0x3779, 10, 15, 5002, EffectLayer.Head );
+				m.PlaySound( 0x1DF );
 
-        public void Target(Mobile m)
-        {
-            if (!this.Caster.CanSee(m))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (this.CheckHSequence(m))
-            {
-                SpellHelper.Turn(this.Caster, m);
+				int percentage = (int)(SpellHelper.GetOffsetScalar( Caster, m, true )*100);
+				TimeSpan length = SpellHelper.GetDuration( Caster, m );
 
-                SpellHelper.CheckReflect((int)this.Circle, this.Caster, ref m);
+				BuffInfo.AddBuff( m, new BuffInfo( BuffIcon.Clumsy, 1075831, length, m, percentage.ToString() ) );
+			}
 
-                int oldOffset = SpellHelper.GetCurseOffset(m, StatType.Dex);
-				SpellHelper.AddStatCurse(this.Caster, m, StatType.Dex, false);
-                int newOffset = SpellHelper.GetCurseOffset(m, StatType.Dex);
+			FinishSequence();
+		}
 
-				if (m.Spell != null)
-                    m.Spell.OnCasterHurt();
+		private class InternalTarget : Target
+		{
+			private ClumsySpell m_Owner;
 
-                m.Paralyzed = false;
+			public InternalTarget( ClumsySpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
 
-                m.FixedParticles(0x3779, 10, 15, 5002, EffectLayer.Head);
-                m.PlaySound(0x1DF);
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+				{
+					m_Owner.Target( (Mobile)o );
+				}
+			}
 
-                this.HarmfulSpell(m);
-
-                if (newOffset < oldOffset)
-                {
-                    int percentage = (int)(SpellHelper.GetOffsetScalar(this.Caster, m, true) * 100);
-                    TimeSpan length = SpellHelper.GetDuration(this.Caster, m);
-                    BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.Clumsy, 1075831, length, m, percentage.ToString()));
-
-                    if (m_Table.ContainsKey(m))
-                        m_Table[m].Stop();
-
-                    m_Table[m] = Timer.DelayCall(length, () =>
-                        {
-                            RemoveEffects(m);
-                        });
-                }
-            }
-
-            this.FinishSequence();
-        }
-
-        private class InternalTarget : Target
-        {
-            private readonly ClumsySpell m_Owner;
-            public InternalTarget(ClumsySpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                this.m_Owner = owner;
-            }
-
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is Mobile)
-                {
-                    this.m_Owner.Target((Mobile)o);
-                }
-            }
-
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

@@ -1,324 +1,284 @@
 using System;
 using System.Collections;
-using Server.Items;
-using Server.Misc;
-using Server.Mobiles;
 using Server.Targeting;
+using Server.Network;
+using Server.Misc;
+using Server.Items;
 
 namespace Server.Spells.Fourth
 {
-    public class FireFieldSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Fire Field", "In Flam Grav",
-            215,
-            9041,
-            false,
-            Reagent.BlackPearl,
-            Reagent.SpidersSilk,
-            Reagent.SulfurousAsh);
-        public FireFieldSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class FireFieldSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Fire Field", "In Flam Grav",
+				SpellCircle.Fourth,
+				215,
+				9041,
+				false,
+				Reagent.BlackPearl,
+				Reagent.SpidersSilk,
+				Reagent.SulfurousAsh
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Fourth;
-            }
-        }
-        public override void OnCast()
-        {
-            Caster.Target = new InternalTarget(this);
-        }
+		public FireFieldSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IPoint3D p)
-        {
-            if (!Caster.CanSee(p))
-            {
-                Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (SpellHelper.CheckTown(p, Caster) && SpellHelper.CheckWater(new Point3D(p), Caster.Map) && CheckSequence())
-            {
-                SpellHelper.Turn(Caster, p);
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-                SpellHelper.GetSurfaceTop(ref p);
+		public void Target( IPoint3D p )
+		{
+			if ( !Caster.CanSee( p ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( SpellHelper.CheckTown( p, Caster ) && CheckSequence() )
+			{
+				SpellHelper.Turn( Caster, p );
 
-                int dx = Caster.Location.X - p.X;
-                int dy = Caster.Location.Y - p.Y;
-                int rx = (dx - dy) * 44;
-                int ry = (dx + dy) * 44;
+				SpellHelper.GetSurfaceTop( ref p );
 
-                bool eastToWest;
+				int dx = Caster.Location.X - p.X;
+				int dy = Caster.Location.Y - p.Y;
+				int rx = (dx - dy) * 44;
+				int ry = (dx + dy) * 44;
 
-                if (rx >= 0 && ry >= 0)
-                {
-                    eastToWest = false;
-                }
-                else if (rx >= 0)
-                {
-                    eastToWest = true;
-                }
-                else if (ry >= 0)
-                {
-                    eastToWest = true;
-                }
-                else
-                {
-                    eastToWest = false;
-                }
+				bool eastToWest;
 
-                Effects.PlaySound(p, Caster.Map, 0x20C);
+				if ( rx >= 0 && ry >= 0 )
+				{
+					eastToWest = false;
+				}
+				else if ( rx >= 0 )
+				{
+					eastToWest = true;
+				}
+				else if ( ry >= 0 )
+				{
+					eastToWest = true;
+				}
+				else
+				{
+					eastToWest = false;
+				}
 
-                int itemID = eastToWest ? 0x398C : 0x3996;
+				Effects.PlaySound( p, Caster.Map, 0x20C );
 
-                TimeSpan duration;
+				int itemID = eastToWest ? 0x398C : 0x3996;
 
-                if (Core.AOS)
-                    duration = TimeSpan.FromSeconds((15 + (Caster.Skills.Magery.Fixed / 5)) / 4);
-                else
-                    duration = TimeSpan.FromSeconds(4.0 + (Caster.Skills[SkillName.Magery].Value * 0.5));
+				TimeSpan duration;
 
-                new FireFieldItem(itemID, new Point3D(p), Caster, Caster.Map, duration);
+				if ( Core.AOS )
+					duration = TimeSpan.FromSeconds( (15 + (Caster.Skills.Magery.Fixed / 5)) / 4 );
+				else
+					duration = TimeSpan.FromSeconds( 4.0 + (Caster.Skills[SkillName.Magery].Value * 0.5) );
 
-                for (int i = 1; i <= 2; ++i)
-                {
-                    Timer.DelayCall<int>(TimeSpan.FromMilliseconds(i * 300), index =>
-                        {
-                            IPoint3D pnt = new Point3D(eastToWest ? p.X + index : p.X, eastToWest ? p.Y : p.Y + index, p.Z);
-                            SpellHelper.GetSurfaceTop(ref pnt);
-                            new FireFieldItem(itemID, new Point3D(pnt), Caster, Caster.Map, duration);
+				for ( int i = -2; i <= 2; ++i )
+				{
+					Point3D loc = new Point3D( eastToWest ? p.X + i : p.X, eastToWest ? p.Y : p.Y + i, p.Z );
 
-                            pnt = new Point3D(eastToWest ? p.X + -index : p.X, eastToWest ? p.Y : p.Y + -index, p.Z);
-                            SpellHelper.GetSurfaceTop(ref pnt);
-                            new FireFieldItem(itemID, new Point3D(pnt), Caster, Caster.Map, duration);
-                        }, i);
-                }
-            }
+					new InternalItem( itemID, loc, Caster, Caster.Map, duration, i );
+				}
+			}
 
-            FinishSequence();
-        }
+			FinishSequence();
+		}
 
-        [DispellableField]
-        public class FireFieldItem : Item
-        {
-            private Timer m_Timer;
-            private DateTime m_End;
-            private Mobile m_Caster;
-            private int m_Damage;
+		[DispellableField]
+		private class InternalItem : Item
+		{
+			private Timer m_Timer;
+			private DateTime m_End;
+			private Mobile m_Caster;
 
-            public Mobile Caster { get { return m_Caster; } }
+			public override bool BlocksFit{ get{ return true; } }
 
-            public FireFieldItem(int itemID, Point3D loc, Mobile caster, Map map, TimeSpan duration)
-                : this(itemID, loc, caster, map, duration, 2)
-            {
-            }
+			public InternalItem( int itemID, Point3D loc, Mobile caster, Map map, TimeSpan duration, int val ) : base( itemID )
+			{
+				bool canFit = SpellHelper.AdjustField( ref loc, map, 12, false );
 
-            public FireFieldItem(int itemID, Point3D loc, Mobile caster, Map map, TimeSpan duration, int damage)
-                : base(itemID)
-            {
-                bool canFit = SpellHelper.AdjustField(ref loc, map, 12, false);
+				Visible = false;
+				Movable = false;
+				Light = LightType.Circle300;
 
-                Movable = false;
-                Light = LightType.Circle300;
+				MoveToWorld( loc, map );
 
-                MoveToWorld(loc, map);
-                Effects.SendLocationParticles(EffectItem.Create(loc, map, EffectItem.DefaultDuration), 0x376A, 9, 10, 5029);
+				m_Caster = caster;
 
-                m_Caster = caster;
+				m_End = DateTime.Now + duration;
 
-                m_Damage = damage;
+				m_Timer = new InternalTimer( this, TimeSpan.FromSeconds( Math.Abs( val ) * 0.2 ), caster.InLOS( this ), canFit );
+				m_Timer.Start();
+			}
 
-                m_End = DateTime.UtcNow + duration;
+			public override void OnAfterDelete()
+			{
+				base.OnAfterDelete();
 
-                m_Timer = new InternalTimer(this, caster.InLOS(this), canFit);
-                m_Timer.Start();
-            }
+				if ( m_Timer != null )
+					m_Timer.Stop();
+			}
 
-            public FireFieldItem(Serial serial)
-                : base(serial)
-            {
-            }
+			public InternalItem( Serial serial ) : base( serial )
+			{
+			}
 
-            public override bool BlocksFit
-            {
-                get
-                {
-                    return true;
-                }
-            }
-            public override void OnAfterDelete()
-            {
-                base.OnAfterDelete();
+			public override void Serialize( GenericWriter writer )
+			{
+				base.Serialize( writer );
 
-                if (m_Timer != null)
-                    m_Timer.Stop();
-            }
+				writer.Write( (int) 1 ); // version
 
-            public override void Serialize(GenericWriter writer)
-            {
-                base.Serialize(writer);
+				writer.Write( m_Caster );
+				writer.WriteDeltaTime( m_End );
+			}
 
-                writer.Write((int)2); // version
+			public override void Deserialize( GenericReader reader )
+			{
+				base.Deserialize( reader );
 
-                writer.Write(m_Damage);
-                writer.Write(m_Caster);
-                writer.WriteDeltaTime(m_End);
-            }
+				int version = reader.ReadInt();
 
-            public override void Deserialize(GenericReader reader)
-            {
-                base.Deserialize(reader);
+				switch ( version )
+				{
+					case 1:
+					{
+						m_Caster = reader.ReadMobile();
 
-                int version = reader.ReadInt();
+						goto case 0;
+					}
+					case 0:
+					{
+						m_End = reader.ReadDeltaTime();
 
-                switch ( version )
-                {
-                    case 2:
-                        {
-                            m_Damage = reader.ReadInt();
-                            goto case 1;
-                        }
-                    case 1:
-                        {
-                            m_Caster = reader.ReadMobile();
+						m_Timer = new InternalTimer( this, TimeSpan.Zero, true, true );
+						m_Timer.Start();
 
-                            goto case 0;
-                        }
-                    case 0:
-                        {
-                            m_End = reader.ReadDeltaTime();
+						break;
+					}
+				}
+			}
 
-                            m_Timer = new InternalTimer(this, true, true);
-                            m_Timer.Start();
+			public override bool OnMoveOver( Mobile m )
+			{
+				if ( Visible && m_Caster != null && (!Core.AOS || m != m_Caster) && SpellHelper.ValidIndirectTarget( m_Caster, m ) && m_Caster.CanBeHarmful( m, false ) )
+				{
+					m_Caster.DoHarmful( m );
 
-                            break;
-                        }
-                }
+					int damage = 2;
 
-                if (version < 2)
-                    m_Damage = 2;
-            }
+					if ( !Core.AOS && m.CheckSkill( SkillName.MagicResist, 0.0, 30.0 ) )
+					{
+						damage = 1;
 
-            public override bool OnMoveOver(Mobile m)
-            {
-                if (Visible && m_Caster != null && (!Core.AOS || m != m_Caster) && SpellHelper.ValidIndirectTarget(m_Caster, m) && m_Caster.CanBeHarmful(m, false))
-                {
-                    if (SpellHelper.CanRevealCaster(m))
-                        m_Caster.RevealingAction();
-					
-                    m_Caster.DoHarmful(m);
+						m.SendLocalizedMessage( 501783 ); // You feel yourself resisting magical energy.
+					}
 
-                    int damage = m_Damage;
+					AOS.Damage( m, m_Caster, damage, 0, 100, 0, 0, 0, 0, 0, 0 );
+					m.PlaySound( 0x208 );
+				}
 
-                    if (!Core.AOS && m.CheckSkill(SkillName.MagicResist, 0.0, 30.0))
-                    {
-                        damage = 1;
+				return true;
+			}
 
-                        m.SendLocalizedMessage(501783); // You feel yourself resisting magical energy.
-                    }
+			private class InternalTimer : Timer
+			{
+				private InternalItem m_Item;
+				private bool m_InLOS, m_CanFit;
 
-                    AOS.Damage(m, m_Caster, damage, 0, 100, 0, 0, 0);
-                    m.PlaySound(0x208);
+				private static Queue m_Queue = new Queue();
 
-                    if (m is BaseCreature)
-                        ((BaseCreature)m).OnHarmfulSpell(m_Caster);
-                }
+				public InternalTimer( InternalItem item, TimeSpan delay, bool inLOS, bool canFit ) : base( delay, TimeSpan.FromSeconds( 1.0 ) )
+				{
+					m_Item = item;
+					m_InLOS = inLOS;
+					m_CanFit = canFit;
 
-                return true;
-            }
+					Priority = TimerPriority.FiftyMS;
+				}
 
-            private class InternalTimer : Timer
-            {
-                private static readonly Queue m_Queue = new Queue();
-                private readonly FireFieldItem m_Item;
-                private readonly bool m_InLOS;
-                private readonly bool m_CanFit;
+				protected override void OnTick()
+				{
+					if ( m_Item.Deleted )
+						return;
 
-                public InternalTimer(FireFieldItem item, bool inLOS, bool canFit)
-                    : base(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1.0))
-                {
-                    m_Item = item;
-                    m_InLOS = inLOS;
-                    m_CanFit = canFit;
+					if ( !m_Item.Visible )
+					{
+						if ( m_InLOS && m_CanFit )
+							m_Item.Visible = true;
+						else
+							m_Item.Delete();
 
-                    Priority = TimerPriority.FiftyMS;
-                }
+						if ( !m_Item.Deleted )
+						{
+							m_Item.ProcessDelta();
+							Effects.SendLocationParticles( EffectItem.Create( m_Item.Location, m_Item.Map, EffectItem.DefaultDuration ), 0x376A, 9, 10, 5029 );
+						}
+					}
+					else if ( DateTime.Now > m_Item.m_End )
+					{
+						m_Item.Delete();
+						Stop();
+					}
+					else
+					{
+						Map map = m_Item.Map;
+						Mobile caster = m_Item.m_Caster;
 
-                protected override void OnTick()
-                {
-                    if (m_Item.Deleted)
-                        return;
+						if ( map != null && caster != null )
+						{
+							foreach ( Mobile m in m_Item.GetMobilesInRange( 0 ) )
+							{
+								if ( (m.Z + 16) > m_Item.Z && (m_Item.Z + 12) > m.Z && (!Core.AOS || m != caster) && SpellHelper.ValidIndirectTarget( caster, m ) && caster.CanBeHarmful( m, false ) )
+									m_Queue.Enqueue( m );
+							}
 
-                    if (DateTime.UtcNow > m_Item.m_End)
-                    {
-                        m_Item.Delete();
-                        Stop();
-                    }
-                    else
-                    {
-                        Map map = m_Item.Map;
-                        Mobile caster = m_Item.m_Caster;
+							while ( m_Queue.Count > 0 )
+							{
+								Mobile m = (Mobile)m_Queue.Dequeue();
 
-                        if (map != null && caster != null)
-                        {
-                            foreach (Mobile m in m_Item.GetMobilesInRange(0))
-                            {
-                                if ((m.Z + 16) > m_Item.Z && (m_Item.Z + 12) > m.Z && (!Core.AOS || m != caster) && SpellHelper.ValidIndirectTarget(caster, m) && caster.CanBeHarmful(m, false))
-                                    m_Queue.Enqueue(m);
-                            }
+								caster.DoHarmful( m );
 
-                            while (m_Queue.Count > 0)
-                            {
-                                Mobile m = (Mobile)m_Queue.Dequeue();
-								
-                                if (SpellHelper.CanRevealCaster(m))
-                                    caster.RevealingAction();
+								int damage = 2;
 
-                                caster.DoHarmful(m);
+								if ( !Core.AOS && m.CheckSkill( SkillName.MagicResist, 0.0, 30.0 ) )
+								{
+									damage = 1;
 
-                                int damage = m_Item.m_Damage;
+									m.SendLocalizedMessage( 501783 ); // You feel yourself resisting magical energy.
+								}
 
-                                if (!Core.AOS && m.CheckSkill(SkillName.MagicResist, 0.0, 30.0))
-                                {
-                                    damage = 1;
+								AOS.Damage( m, caster, damage, 0, 100, 0, 0, 0, 0, 0, 0 );
+								m.PlaySound( 0x208 );
+							}
+						}
+					}
+				}
+			}
+		}
 
-                                    m.SendLocalizedMessage(501783); // You feel yourself resisting magical energy.
-                                }
+		private class InternalTarget : Target
+		{
+			private FireFieldSpell m_Owner;
 
-                                AOS.Damage(m, caster, damage, 0, 100, 0, 0, 0);
-                                m.PlaySound(0x208);
+			public InternalTarget( FireFieldSpell owner ) : base( 12, true, TargetFlags.None )
+			{
+				m_Owner = owner;
+			}
 
-                                if (m is BaseCreature)
-                                    ((BaseCreature)m).OnHarmfulSpell(caster);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is IPoint3D )
+					m_Owner.Target( (IPoint3D)o );
+			}
 
-        public class InternalTarget : Target
-        {
-            private readonly FireFieldSpell m_Owner;
-            public InternalTarget(FireFieldSpell owner)
-                : base(Core.ML ? 10 : 12, true, TargetFlags.None)
-            {
-                m_Owner = owner;
-            }
-
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IPoint3D)
-                    m_Owner.Target((IPoint3D)o);
-            }
-
-            protected override void OnTargetFinish(Mobile from)
-            {
-                m_Owner.FinishSequence();
-            }
-        }
-    }
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

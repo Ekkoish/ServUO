@@ -1,181 +1,158 @@
 using System;
 using System.Collections;
+using Server.Network;
+using Server.Items;
+using Server.Mobiles;
 
 namespace Server.Spells.Bushido
 {
-    public class Confidence : SamuraiSpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Confidence", null,
-            -1,
-            9002);
-        private static readonly Hashtable m_Table = new Hashtable();
-        private static readonly Hashtable m_RegenTable = new Hashtable();
-        public Confidence(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class Confidence : SamuraiSpell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Confidence", null,
+				SpellCircle.First, // 0 + 0.25 = 0.25s base cast delay
+				-1,
+				9002
+			);
 
-        public override TimeSpan CastDelayBase
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(0.25);
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return 25.0;
-            }
-        }
-        public override int RequiredMana
-        {
-            get
-            {
-                return 10;
-            }
-        }
-        public static bool IsConfident(Mobile m)
-        {
-            return m_Table.Contains(m);
-        }
+		public override double RequiredSkill{ get{ return 25.0; } }
+		public override int RequiredMana{ get{ return 10; } }
 
-        public static void BeginConfidence(Mobile m)
-        {
-            Timer t = (Timer)m_Table[m];
+		public Confidence( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-            if (t != null)
-                t.Stop();
+		public override void OnBeginCast()
+		{
+			base.OnBeginCast();
 
-            t = new InternalTimer(m);
+			Caster.FixedEffect( 0x37C4, 10, 7, 4, 3 );
+		}
 
-            m_Table[m] = t;
+		public override void OnCast()
+		{
+			if ( CheckSequence() )
+			{
+				Caster.SendLocalizedMessage( 1063115 ); // You exude confidence.
 
-            double bushido = m.Skills.Bushido.Value;
-            string args = String.Format("12\t5\t{0}", (int)(15 + (bushido * bushido / 576)) * 2.5);
-            BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.Confidence, 1060596, 1153809, TimeSpan.FromSeconds(15), m, args));
+				Caster.FixedParticles( 0x375A, 1, 17, 0x7DA, 0x960, 0x3, EffectLayer.Waist );
+				Caster.PlaySound( 0x51A );
 
-            int anticipateHitBonus = SkillMasteries.MasteryInfo.AnticipateHitBonus(m);
+				OnCastSuccessful( Caster );
 
-            if (anticipateHitBonus > 0)
-                BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.AnticipateHit, 1155905, anticipateHitBonus.ToString())); // ~1_CHANCE~% chance to reduce Confidence heal by ~2_REDUCE~% when hit. 
+				BeginConfidence( Caster );
+				BeginRegenerating( Caster );
+			}
 
-            t.Start();
-        }
+			FinishSequence();
+		}
 
-        public static void EndConfidence(Mobile m)
-        {
-            Timer t = (Timer)m_Table[m];
+		private static Hashtable m_Table = new Hashtable();
 
-            if (t != null)
-                t.Stop();
+		public static bool IsConfident( Mobile m )
+		{
+			return m_Table.Contains( m );
+		}
 
-            m_Table.Remove(m);
+		public static void BeginConfidence( Mobile m )
+		{
+			Timer t = (Timer)m_Table[m];
 
-            BuffInfo.RemoveBuff(m, BuffIcon.Confidence);
-            BuffInfo.RemoveBuff(m, BuffIcon.AnticipateHit);
+			if ( t != null )
+				t.Stop();
 
-            OnEffectEnd(m, typeof(Confidence));
-        }
+			t = new InternalTimer( m );
 
-        public static bool IsRegenerating(Mobile m)
-        {
-            return m_RegenTable.Contains(m);
-        }
+			m_Table[m] = t;
 
-        public static void BeginRegenerating(Mobile m)
-        {
-            Timer t = (Timer)m_RegenTable[m];
+			t.Start();
+		}
 
-            if (t != null)
-                t.Stop();
+		public static void EndConfidence( Mobile m )
+		{
+			Timer t = (Timer)m_Table[m];
 
-            t = new RegenTimer(m);
+			if ( t != null )
+				t.Stop();
 
-            m_RegenTable[m] = t;
+			m_Table.Remove( m );
 
-            t.Start();
-        }
+			OnEffectEnd( m, typeof( Confidence ) );
+		}
 
-        public static void StopRegenerating(Mobile m)
-        {
-            Timer t = (Timer)m_RegenTable[m];
+		private class InternalTimer : Timer
+		{
+			private Mobile m_Mobile;
 
-            if (t != null)
-                t.Stop();
+			public InternalTimer( Mobile m ) : base( TimeSpan.FromSeconds( 15.0 ) )
+			{
+				m_Mobile = m;
+				Priority = TimerPriority.TwoFiftyMS;
+			}
 
-            m_RegenTable.Remove(m);
-        }
+			protected override void OnTick()
+			{
+				EndConfidence( m_Mobile );
+				m_Mobile.SendLocalizedMessage( 1063116 ); // Your confidence wanes.
+			}
+		}
 
-        public override void OnBeginCast()
-        {
-            base.OnBeginCast();
+		private static Hashtable m_RegenTable = new Hashtable();
 
-            this.Caster.FixedEffect(0x37C4, 10, 7, 4, 3);
-        }
+		public static bool IsRegenerating( Mobile m )
+		{
+			return m_RegenTable.Contains( m );
+		}
 
-        public override void OnCast()
-        {
-            if (this.CheckSequence())
-            {
-                this.Caster.SendLocalizedMessage(1063115); // You exude confidence.
+		public static void BeginRegenerating( Mobile m )
+		{
+			Timer t = (Timer)m_RegenTable[m];
 
-                this.Caster.FixedParticles(0x375A, 1, 17, 0x7DA, 0x960, 0x3, EffectLayer.Waist);
-                this.Caster.PlaySound(0x51A);
+			if ( t != null )
+				t.Stop();
 
-                this.OnCastSuccessful(this.Caster);
+			t = new RegenTimer( m );
 
-                BeginConfidence(this.Caster);
-                BeginRegenerating(this.Caster);
-            }
+			m_RegenTable[m] = t;
 
-            this.FinishSequence();
-        }
+			t.Start();
+		}
 
-        private class InternalTimer : Timer
-        {
-            private readonly Mobile m_Mobile;
-            public InternalTimer(Mobile m)
-                : base(TimeSpan.FromSeconds(15.0))
-            {
-                this.m_Mobile = m;
-                this.Priority = TimerPriority.TwoFiftyMS;
-            }
+		public static void StopRegenerating( Mobile m )
+		{
+			Timer t = (Timer)m_RegenTable[m];
 
-            protected override void OnTick()
-            {
-                EndConfidence(this.m_Mobile);
-                this.m_Mobile.SendLocalizedMessage(1063116); // Your confidence wanes.
-            }
-        }
+			if ( t != null )
+				t.Stop();
 
-        private class RegenTimer : Timer
-        {
-            private readonly Mobile m_Mobile;
-            private readonly int m_Hits;
-            private int m_Ticks;
-            public RegenTimer(Mobile m)
-                : base(TimeSpan.FromSeconds(1.0), TimeSpan.FromSeconds(1.0))
-            {
-                this.m_Mobile = m;
-                this.m_Hits = 15 + (m.Skills.Bushido.Fixed * m.Skills.Bushido.Fixed / 57600);
-                this.Priority = TimerPriority.TwoFiftyMS;
-            }
+			m_RegenTable.Remove( m );
+		}
 
-            protected override void OnTick()
-            {
-                ++this.m_Ticks;
+		private class RegenTimer : Timer
+		{
+			private Mobile m_Mobile;
+			private int m_Ticks;
+			private int m_Hits;
 
-                if (this.m_Ticks >= 5)
-                {
-                    this.m_Mobile.Hits += (this.m_Hits - (this.m_Hits * 4 / 5));
-                    StopRegenerating(this.m_Mobile);
-                }
+			public RegenTimer( Mobile m ) : base( TimeSpan.FromSeconds( 1.0 ), TimeSpan.FromSeconds( 1.0 ) )
+			{
+				m_Mobile = m;
+				m_Hits = 15 + (m.Skills.Leadership.Fixed * m.Skills.Leadership.Fixed / 57600);
+				Priority = TimerPriority.TwoFiftyMS;
+			}
 
-                this.m_Mobile.Hits += (this.m_Hits / 5);
-            }
-        }
-    }
+			protected override void OnTick()
+			{
+				++m_Ticks;
+
+				if ( m_Ticks >= 5 )
+				{
+					m_Mobile.Hits += (m_Hits - (m_Hits * 4 / 5));
+					StopRegenerating( m_Mobile );
+				}
+
+				m_Mobile.Hits += (m_Hits / 5);
+			}
+		}
+	}
 }

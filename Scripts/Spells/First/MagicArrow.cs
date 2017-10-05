@@ -1,126 +1,96 @@
 using System;
 using Server.Targeting;
+using Server.Network;
 
 namespace Server.Spells.First
 {
-    public class MagicArrowSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Magic Arrow", "In Por Ylem",
-            212,
-            9041,
-            Reagent.SulfurousAsh);
-        public MagicArrowSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class MagicArrowSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Magic Arrow", "In Por Ylem",
+				SpellCircle.First,
+				212,
+				9041,
+				Reagent.SulfurousAsh
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.First;
-            }
-        }
-        public override bool DelayedDamageStacking
-        {
-            get
-            {
-                return !Core.AOS;
-            }
-        }
-        public override bool DelayedDamage
-        {
-            get
-            {
-                return true;
-            }
-        }
-        public override Type[] DelayDamageFamily { get { return new Type[] { typeof(Server.Spells.Mysticism.NetherBoltSpell) }; } }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+		public MagicArrowSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IDamageable d)
-        {
-            Mobile m = d as Mobile;
+        public override bool DelayedDamageStacking { get { return !Core.AOS; } }
 
-            if (!this.Caster.CanSee(d))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (this.CheckHSequence(d))
-            {
-                Mobile source = this.Caster;
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-                SpellHelper.Turn(source, d);
+		public override bool DelayedDamage{ get{ return true; } }
 
-                if (m != null)
-                {
-                    if (SpellHelper.CheckReflect((int)this.Circle, ref source, ref m))
-                    {
-                        Timer.DelayCall(TimeSpan.FromSeconds(.5), () =>
-                        {
-                            source.MovingParticles(m, 0x379F, 7, 0, false, true, 3043, 4043, 0x211);
-                            source.PlaySound(0x20A);
-                        });
-                    }
-                }
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				Mobile source = Caster;
 
-                double damage = 0;
+				SpellHelper.Turn( source, m );
+
+				SpellHelper.CheckReflect( (int)this.Circle, ref source, ref m );
+
+				double damage;
 				
-                if (Core.AOS)
-                {
-                    damage = this.GetNewAosDamage(10, 1, 4, d);
-                }
-                else if (m != null)
-                {
-                    damage = Utility.Random(4, 4);
+				if ( Core.AOS )
+				{
+					damage = GetNewAosDamage( 10, 1, 4, m );
+				}
+				else
+				{
+					damage = Utility.Random( 4, 4 );
 
-                    if (this.CheckResisted(m))
-                    {
-                        damage *= 0.75;
+					if ( CheckResisted( m ) )
+					{
+						damage *= 0.75;
 
-                        m.SendLocalizedMessage(501783); // You feel yourself resisting magical energy.
-                    }
+						m.SendLocalizedMessage( 501783 ); // You feel yourself resisting magical energy.
+					}
 
-                    damage *= this.GetDamageScalar(m);
-                }
+					damage *= GetDamageScalar( m );
+				}
 
-                if (damage > 0)
-                {
-                    this.Caster.MovingParticles(d, 0x36E4, 5, 0, false, false, 3006, 0, 0);
-                    this.Caster.PlaySound(0x1E5);
+				source.MovingParticles( m, 0x36E4, 5, 0, false, true, 3006, 4006, 0 );
+				source.PlaySound( 0x1E5 );
 
-                    SpellHelper.Damage(this, m != null ? m : d, damage, 0, 100, 0, 0, 0);
-                }
-            }
+				SpellHelper.Damage( this, m, damage, 0, 100, 0, 0, 0 );
+			}
 
-            this.FinishSequence();
-        }
+			FinishSequence();
+		}
 
-        private class InternalTarget : Target
-        {
-            private readonly MagicArrowSpell m_Owner;
-            public InternalTarget(MagicArrowSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                this.m_Owner = owner;
-            }
+		private class InternalTarget : Target
+		{
+			private MagicArrowSpell m_Owner;
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IDamageable)
-                {
-                    this.m_Owner.Target((IDamageable)o);
-                }
-            }
+			public InternalTarget( MagicArrowSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+				{
+					m_Owner.Target( (Mobile)o );
+				}
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

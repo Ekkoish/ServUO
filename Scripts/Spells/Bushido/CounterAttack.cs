@@ -1,131 +1,115 @@
 using System;
 using System.Collections;
+using Server.Network;
 using Server.Items;
+using Server.Mobiles;
+using Server.Targeting;
 
 namespace Server.Spells.Bushido
 {
-    public class CounterAttack : SamuraiSpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "CounterAttack", null,
-            -1,
-            9002);
-        private static readonly Hashtable m_Table = new Hashtable();
-        public CounterAttack(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class CounterAttack : SamuraiSpell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"CounterAttack", null,
+				SpellCircle.First, // 0 + 0.25 = 0.25s base cast delay
+				-1,
+				9002
+			);
 
-        public override TimeSpan CastDelayBase
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(0.25);
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return 40.0;
-            }
-        }
-        public override int RequiredMana
-        {
-            get
-            {
-                return 5;
-            }
-        }
-        public static bool IsCountering(Mobile m)
-        {
-            return m_Table.Contains(m);
-        }
+		public override double RequiredSkill{ get{ return 40.0; } }
+		public override int RequiredMana{ get{ return 5; } }
 
-        public static void StartCountering(Mobile m)
-        {
-            Timer t = (Timer)m_Table[m];
+		public override bool CheckCast()
+		{
+			if ( !base.CheckCast() )
+				return false;
 
-            if (t != null)
-                t.Stop();
+			if ( Caster.FindItemOnLayer( Layer.TwoHanded ) as BaseShield != null )
+				return true;
 
-            t = new InternalTimer(m);
+			if ( Caster.FindItemOnLayer( Layer.OneHanded ) as BaseWeapon != null )
+				return true;
 
-            m_Table[m] = t;
+			if ( Caster.FindItemOnLayer( Layer.TwoHanded ) as BaseWeapon != null )
+				return true;
 
-            BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.CounterAttack, 1060598, 1063266, TimeSpan.FromSeconds(30), m));
+			Caster.SendLocalizedMessage( 1062944 ); // You must have a weapon or a shield equipped to use this ability!
+			return false;
+		}
 
-            t.Start();
-        }
+		public CounterAttack( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public static void StopCountering(Mobile m)
-        {
-            Timer t = (Timer)m_Table[m];
+		public override void OnBeginCast()
+		{
+			base.OnBeginCast();
 
-            if (t != null)
-                t.Stop();
+			Caster.FixedEffect( 0x37C4, 10, 7, 4, 3 );
+		}
 
-            m_Table.Remove(m);
+		public override void OnCast()
+		{
+			if ( CheckSequence() )
+			{
+				Caster.SendLocalizedMessage( 1063118 ); // You prepare to respond immediately to the next blocked blow.
 
-            BuffInfo.RemoveBuff(m, BuffIcon.CounterAttack);
+				OnCastSuccessful( Caster );
 
-            OnEffectEnd(m, typeof(CounterAttack));
-        }
+				StartCountering( Caster );
+			}
 
-        public override bool CheckCast()
-        {
-            if (!base.CheckCast())
-                return false;
+			FinishSequence();
+		}
 
-            if (this.Caster.FindItemOnLayer(Layer.TwoHanded) as BaseShield != null)
-                return true;
+		private static Hashtable m_Table = new Hashtable();
 
-            if (this.Caster.FindItemOnLayer(Layer.OneHanded) as BaseWeapon != null)
-                return true;
+		public static bool IsCountering( Mobile m )
+		{
+			return m_Table.Contains( m );
+		}
 
-            if (this.Caster.FindItemOnLayer(Layer.TwoHanded) as BaseWeapon != null)
-                return true;
+		public static void StartCountering( Mobile m )
+		{
+			Timer t = (Timer)m_Table[m];
 
-            this.Caster.SendLocalizedMessage(1062944); // You must have a weapon or a shield equipped to use this ability!
-            return false;
-        }
+			if ( t != null )
+				t.Stop();
 
-        public override void OnBeginCast()
-        {
-            base.OnBeginCast();
+			t = new InternalTimer( m );
 
-            this.Caster.FixedEffect(0x37C4, 10, 7, 4, 3);
-        }
+			m_Table[m] = t;
 
-        public override void OnCast()
-        {
-            if (this.CheckSequence())
-            {
-                this.Caster.SendLocalizedMessage(1063118); // You prepare to respond immediately to the next blocked blow.
+			t.Start();
+		}
 
-                this.OnCastSuccessful(this.Caster);
+		public static void StopCountering( Mobile m )
+		{
+			Timer t = (Timer)m_Table[m];
 
-                StartCountering(this.Caster);
-            }
+			if ( t != null )
+				t.Stop();
 
-            this.FinishSequence();
-        }
+			m_Table.Remove( m );
 
-        private class InternalTimer : Timer
-        {
-            private readonly Mobile m_Mobile;
-            public InternalTimer(Mobile m)
-                : base(TimeSpan.FromSeconds(30.0))
-            {
-                this.m_Mobile = m;
-                this.Priority = TimerPriority.TwoFiftyMS;
-            }
+			OnEffectEnd( m, typeof( CounterAttack ) );
+		}
 
-            protected override void OnTick()
-            {
-                StopCountering(this.m_Mobile);
-                this.m_Mobile.SendLocalizedMessage(1063119); // You return to your normal stance.
-            }
-        }
-    }
+		private class InternalTimer : Timer
+		{
+			private Mobile m_Mobile;
+
+			public InternalTimer( Mobile m ) : base( TimeSpan.FromSeconds( 30.0 ) )
+			{
+				m_Mobile = m;
+				Priority = TimerPriority.TwoFiftyMS;
+			}
+
+			protected override void OnTick()
+			{
+				StopCountering( m_Mobile );
+				m_Mobile.SendLocalizedMessage( 1063119 ); // You return to your normal stance.
+			}
+		}
+	}
 }

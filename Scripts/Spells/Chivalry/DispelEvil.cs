@@ -1,154 +1,116 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
+using Server.Network;
 using Server.Items;
+using Server.Targeting;
 using Server.Mobiles;
 using Server.Spells.Necromancy;
 
 namespace Server.Spells.Chivalry
 {
-    public class DispelEvilSpell : PaladinSpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Dispel Evil", "Dispiro Malas",
-            -1,
-            9002);
-        public DispelEvilSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class DispelEvilSpell : PaladinSpell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Dispel Evil", "Dispiro Malas",
+				SpellCircle.First, // 0 + 0.25 = 0.25s base cast delay
+				-1,
+				9002
+			);
 
-        public override TimeSpan CastDelayBase
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(0.25);
-            }
-        }
-        public override double RequiredSkill
-        {
-            get
-            {
-                return 35.0;
-            }
-        }
-        public override int RequiredMana
-        {
-            get
-            {
-                return 10;
-            }
-        }
-        public override int RequiredTithing
-        {
-            get
-            {
-                return 10;
-            }
-        }
-        public override int MantraNumber
-        {
-            get
-            {
-                return 1060721;
-            }
-        }// Dispiro Malas
-        public override bool BlocksMovement
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override bool DelayedDamage
-        {
-            get
-            {
-                return false;
-            }
-        }
-        public override void SendCastEffect()
-        {
-            this.Caster.FixedEffect(0x37C4, 10, 7, 4, 3); // At player
-        }
+		public override double RequiredSkill{ get{ return 35.0; } }
+		public override int RequiredMana{ get{ return 10; } }
+		public override int RequiredTithing{ get{ return 10; } }
+		public override int MantraNumber{ get{ return 1060721; } } // Dispiro Malas
+		public override bool BlocksMovement{ get{ return false; } }
 
-        public override void OnCast()
-        {
-            if (this.CheckSequence())
-            {
-                List<Mobile> targets = new List<Mobile>();
+		public DispelEvilSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-                foreach (Mobile m in this.Caster.GetMobilesInRange(8))
-                {
-                    if (this.Caster != m && SpellHelper.ValidIndirectTarget(this.Caster, m) && this.Caster.CanBeHarmful(m, false))
-                        targets.Add(m);
-                }
-				
-                this.Caster.PlaySound(0xF5);
-                this.Caster.PlaySound(0x299);
-                this.Caster.FixedParticles(0x37C4, 1, 25, 9922, 14, 3, EffectLayer.Head);
+		public override bool DelayedDamage{ get{ return false; } }
 
-                int dispelSkill = this.ComputePowerValue(2);
+		public override void SendCastEffect()
+		{
+			Caster.FixedEffect( 0x37C4, 10, 7, 4, 3 ); // At player
+		}
 
-                double chiv = this.Caster.Skills.Chivalry.Value;
+		public override void OnCast()
+		{
+			if ( CheckSequence() )
+			{
+				ArrayList targets = new ArrayList();
 
-                for (int i = 0; i < targets.Count; ++i)
-                {
-                    Mobile m = targets[i];
-                    BaseCreature bc = m as BaseCreature;
+				foreach ( Mobile m in Caster.GetMobilesInRange( 8 ) )
+				{
+					if ( Caster != m && SpellHelper.ValidIndirectTarget( Caster, m ) && Caster.CanBeHarmful( m, false ) )
+						targets.Add( m );
+				}
 
-                    if (bc != null)
-                    {
-                        bool dispellable = bc.Summoned && !bc.IsAnimatedDead;
+				Caster.PlaySound( 0x299 );
+				Caster.FixedParticles( 0x37C4, 1, 25, 9922, 14, 3, EffectLayer.Head );
 
-                        if (dispellable)
-                        {
-                            double dispelChance = (50.0 + ((100 * (chiv - bc.GetDispelDifficulty())) / (bc.DispelFocus * 2))) / 100;
-                            dispelChance *= dispelSkill / 100.0;
+				int dispelSkill = ComputePowerValue( 2 );
 
-                            if (dispelChance > Utility.RandomDouble())
-                            {
-                                Effects.SendLocationParticles(EffectItem.Create(m.Location, m.Map, EffectItem.DefaultDuration), 0x3728, 8, 20, 5042);
-                                Effects.PlaySound(m, m.Map, 0x201);
+				double chiv = Caster.Skills.Faith.Value;
 
-                                m.Delete();
-                                continue;
-                            }
-                        }
+				for ( int i = 0; i < targets.Count; ++i )
+				{
+					Mobile m = (Mobile)targets[i];
+					BaseCreature bc = m as BaseCreature;
 
-                        bool evil = !bc.Controlled && bc.Karma < 0;
+					if ( bc != null )
+					{
+						bool dispellable = bc.Summoned && !bc.IsAnimatedDead;
 
-                        if (evil)
-                        {
-                            // TODO: Is this right?
-                            double fleeChance = (100 - Math.Sqrt(m.Fame / 2)) * chiv * dispelSkill;
-                            fleeChance /= 1000000;
+						if ( dispellable )
+						{
+							double dispelChance = (50.0 + ((100 * (chiv - bc.DispelDifficulty)) / (bc.DispelFocus*2))) / 100;
+							dispelChance *= dispelSkill / 100.0;
 
-                            if (fleeChance > Utility.RandomDouble())
-                            {
-                                // guide says 2 seconds, it's longer
-                                bc.BeginFlee(TimeSpan.FromSeconds(30.0));
-                            }
-                        }
-                    }
+							if ( dispelChance > Utility.RandomDouble() )
+							{
+								Effects.SendLocationParticles( EffectItem.Create( m.Location, m.Map, EffectItem.DefaultDuration ), 0x3728, 8, 20, 5042 );
+								Effects.PlaySound( m, m.Map, 0x201 );
 
-                    TransformContext context = TransformationSpellHelper.GetContext(m);
-                    if (context != null && context.Spell is NecromancerSpell)	//Trees are not evil!	TODO: OSI confirm?
-                    {
-                        // transformed ..
-                        double drainChance = 0.5 * (this.Caster.Skills.Chivalry.Value / Math.Max(m.Skills.Necromancy.Value, 1));
+								m.Delete();
+								continue;
+							}
+						}
 
-                        if (drainChance > Utility.RandomDouble())
-                        {
-                            int drain = (5 * dispelSkill) / 100;
+						bool evil = !bc.Controlled && bc.Karma < 0;
 
-                            m.Stam -= drain;
-                            m.Mana -= drain;
-                        }
-                    }
-                }
-            }
+						if ( evil )
+						{
+							// TODO: Is this right?
+							double fleeChance = (100 - Math.Sqrt( m.Fame / 2 )) * chiv * dispelSkill;
+							fleeChance /= 1000000;
 
-            this.FinishSequence();
-        }
-    }
+							if ( fleeChance > Utility.RandomDouble() )
+							{
+								// guide says 2 seconds, it's longer
+								bc.BeginFlee( TimeSpan.FromSeconds( 30.0 ) );
+							}
+						}
+					}
+
+					if ( TransformationSpell.GetContext( m ) != null )
+					{
+						// transformed ..
+
+						double drainChance = 0.5 * (Caster.Skills.Faith.Value / Math.Max( m.Skills.Polearms.Value, 1 ));
+
+						if ( drainChance > Utility.RandomDouble() )
+						{
+							int drain = (5 * dispelSkill) / 100;
+
+							m.Stam -= drain;
+							m.Mana -= drain;
+						}
+					}
+				}
+			}
+
+			FinishSequence();
+		}
+	}
 }
