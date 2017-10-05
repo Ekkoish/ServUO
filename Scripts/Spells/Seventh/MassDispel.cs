@@ -1,119 +1,115 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
+using Server.Misc;
+using Server.Network;
 using Server.Items;
-using Server.Mobiles;
 using Server.Targeting;
+using Server.Mobiles;
 
 namespace Server.Spells.Seventh
 {
-    public class MassDispelSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Mass Dispel", "Vas An Ort",
-            263,
-            9002,
-            Reagent.Garlic,
-            Reagent.MandrakeRoot,
-            Reagent.BlackPearl,
-            Reagent.SulfurousAsh);
-        public MassDispelSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class MassDispelSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Mass Dispel", "Vas An Ort",
+				SpellCircle.Seventh,
+				263,
+				9002,
+				Reagent.Garlic,
+				Reagent.MandrakeRoot,
+				Reagent.BlackPearl,
+				Reagent.SulfurousAsh
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Seventh;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+		public MassDispelSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IPoint3D p)
-        {
-            if (!this.Caster.CanSee(p))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (this.CheckSequence())
-            {
-                SpellHelper.Turn(this.Caster, p);
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-                SpellHelper.GetSurfaceTop(ref p);
+		public void Target( IPoint3D p )
+		{
+			if ( !Caster.CanSee( p ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckSequence() )
+			{
+				SpellHelper.Turn( Caster, p );
 
-                List<Mobile> targets = new List<Mobile>();
+				SpellHelper.GetSurfaceTop( ref p );
 
-                Map map = this.Caster.Map;
+				ArrayList targets = new ArrayList();
 
-                if (map != null)
-                {
-                    IPooledEnumerable eable = map.GetMobilesInRange(new Point3D(p), 8);
+				Map map = Caster.Map;
 
-                    foreach (Mobile m in eable)
-                        if (m is BaseCreature && (m as BaseCreature).IsDispellable && (((BaseCreature)m).SummonMaster == this.Caster || this.Caster.CanBeHarmful(m, false)))
-                            targets.Add(m);
+				if ( map != null )
+				{
+					IPooledEnumerable eable = map.GetMobilesInRange( new Point3D( p ), 8 );
 
-                    eable.Free();
-                }
+					foreach ( Mobile m in eable )
+					{
+						if ( m is BaseCreature && (m as BaseCreature).IsDispellable && Caster.CanBeHarmful( m, false ) )
+							targets.Add( m );
+					}
 
-                for (int i = 0; i < targets.Count; ++i)
-                {
-                    Mobile m = targets[i];
+					eable.Free();
+				}
 
-                    BaseCreature bc = m as BaseCreature;
+				for ( int i = 0; i < targets.Count; ++i )
+				{
+					Mobile m = (Mobile)targets[i];
 
-                    if (bc == null)
-                        continue;
+					BaseCreature bc = m as BaseCreature;
 
-                    double dispelChance = (50.0 + ((100 * (this.Caster.Skills.Magery.Value - bc.GetDispelDifficulty())) / (bc.DispelFocus * 2))) / 100;
-                    
-                    // Skill Masteries
-                    dispelChance -= ((double)SkillMasteries.MasteryInfo.EnchantedSummoningBonus(bc) / 100);
+					if ( bc == null )
+						continue;
 
-                    if (dispelChance > Utility.RandomDouble())
-                    {
-                        Effects.SendLocationParticles(EffectItem.Create(m.Location, m.Map, EffectItem.DefaultDuration), 0x3728, 8, 20, 5042);
-                        Effects.PlaySound(m, m.Map, 0x201);
+					double dispelChance = (50.0 + ((100 * (Caster.Skills.Magery.Value - bc.DispelDifficulty)) / (bc.DispelFocus*2))) / 100;
 
-                        m.Delete();
-                    }
-                    else
-                    {
-                        this.Caster.DoHarmful(m);
+					if ( dispelChance > Utility.RandomDouble() )
+					{
+						Effects.SendLocationParticles( EffectItem.Create( m.Location, m.Map, EffectItem.DefaultDuration ), 0x3728, 8, 20, 5042 );
+						Effects.PlaySound( m, m.Map, 0x201 );
 
-                        m.FixedEffect(0x3779, 10, 20);
-                    }
-                }
-            }
+						m.Delete();
+					}
+					else
+					{
+						Caster.DoHarmful( m );
 
-            this.FinishSequence();
-        }
+						m.FixedEffect( 0x3779, 10, 20 );
+					}
+				}
+			}
 
-        public class InternalTarget : Target
-        {
-            private readonly MassDispelSpell m_Owner;
-            public InternalTarget(MassDispelSpell owner)
-                : base(Core.ML ? 10 : 12, true, TargetFlags.None)
-            {
-                this.m_Owner = owner;
-            }
+			FinishSequence();
+		}
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                IPoint3D p = o as IPoint3D;
+		private class InternalTarget : Target
+		{
+			private MassDispelSpell m_Owner;
 
-                if (p != null)
-                    this.m_Owner.Target(p);
-            }
+			public InternalTarget( MassDispelSpell owner ) : base( 12, true, TargetFlags.None )
+			{
+				m_Owner = owner;
+			}
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			protected override void OnTarget( Mobile from, object o )
+			{
+				IPoint3D p = o as IPoint3D;
+
+				if ( p != null )
+					m_Owner.Target( p );
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

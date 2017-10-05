@@ -1,117 +1,93 @@
 using System;
 using Server.Targeting;
+using Server.Network;
 
 namespace Server.Spells.Seventh
 {
-    public class FlameStrikeSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Flame Strike", "Kal Vas Flam",
-            245,
-            9042,
-            Reagent.SpidersSilk,
-            Reagent.SulfurousAsh);
-        public FlameStrikeSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class FlameStrikeSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Flame Strike", "Kal Vas Flam",
+				SpellCircle.Seventh,
+				245,
+				9042,
+				Reagent.SpidersSilk,
+				Reagent.SulfurousAsh
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Seventh;
-            }
-        }
-        public override bool DelayedDamage
-        {
-            get
-            {
-                return true;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+		public FlameStrikeSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IDamageable m)
-        {
-            if (!this.Caster.CanSee(m))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (this.CheckHSequence(m))
-            {
-                SpellHelper.Turn(this.Caster, m);
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-                Mobile source = this.Caster;
-                Mobile mob = m as Mobile;
+		public override bool DelayedDamage{ get{ return true; } }
 
-                if(mob != null)
-                    SpellHelper.CheckReflect((int)this.Circle, ref source, ref mob);
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-                double damage = 0;
+				SpellHelper.CheckReflect( (int)this.Circle, Caster, ref m );
 
-                if (Core.AOS)
-                {
-                    damage = this.GetNewAosDamage(48, 1, 5, m);
-                }
-                else if (mob != null)
-                {
-                    damage = Utility.Random(27, 22);
+				double damage;
 
-                    if (this.CheckResisted(mob))
-                    {
-                        damage *= 0.6;
+				if ( Core.AOS )
+				{
+					damage = GetNewAosDamage( 48, 1, 5, m );
+				}
+				else
+				{
+					damage = Utility.Random( 27, 22 );
 
-                        mob.SendLocalizedMessage(501783); // You feel yourself resisting magical energy.
-                    }
+					if ( CheckResisted( m ) )
+					{
+						damage *= 0.6;
 
-                    damage *= this.GetDamageScalar(mob);
-                }
+						m.SendLocalizedMessage( 501783 ); // You feel yourself resisting magical energy.
+					}
 
-                if (mob != null)
-                {
-                    mob.FixedParticles(0x3709, 10, 30, 5052, EffectLayer.LeftFoot);
-                    mob.PlaySound(0x208);
-                }
-                else
-                {
-                    Effects.SendLocationParticles(m, 0x3709, 10, 30, 5052);
-                    Effects.PlaySound(m.Location, m.Map, 0x208);
-                }
+					damage *= GetDamageScalar( m );
+				}
 
-                if (damage > 0)
-                {
-                    SpellHelper.Damage(this, mob != null ? mob : m, damage, 0, 100, 0, 0, 0);
-                }
-            }
+				m.FixedParticles( 0x3709, 10, 30, 5052, EffectLayer.LeftFoot );
+				m.PlaySound( 0x208 );
 
-            this.FinishSequence();
-        }
+				SpellHelper.Damage( this, m, damage, 0, 0, 0, 0, 100 );
+			}
 
-        private class InternalTarget : Target
-        {
-            private readonly FlameStrikeSpell m_Owner;
-            public InternalTarget(FlameStrikeSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                this.m_Owner = owner;
-            }
+			FinishSequence();
+		}
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IDamageable)
-                {
-                    this.m_Owner.Target((IDamageable)o);
-                }
-            }
+		private class InternalTarget : Target
+		{
+			private FlameStrikeSpell m_Owner;
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			public InternalTarget( FlameStrikeSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+				{
+					m_Owner.Target( (Mobile)o );
+				}
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

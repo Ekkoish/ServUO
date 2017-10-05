@@ -1,119 +1,96 @@
 using System;
 using Server.Targeting;
+using Server.Network;
 
 namespace Server.Spells.Sixth
 {
-    public class EnergyBoltSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Energy Bolt", "Corp Por",
-            230,
-            9022,
-            Reagent.BlackPearl,
-            Reagent.Nightshade);
-        public EnergyBoltSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class EnergyBoltSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Energy Bolt", "Corp Por",
+				SpellCircle.Sixth,
+				230,
+				9022,
+				Reagent.BlackPearl,
+				Reagent.Nightshade
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Sixth;
-            }
-        }
-        public override bool DelayedDamage
-        {
-            get
-            {
-                return true;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+		public EnergyBoltSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IDamageable m)
-        {
-            Mobile mob = m as Mobile;
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-            if (!this.Caster.CanSee(m))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (this.CheckHSequence(m))
-            {
-                Mobile source = this.Caster;
-                SpellHelper.Turn(this.Caster, m);
+		public override bool DelayedDamage{ get{ return true; } }
 
-                if (mob != null)
-                {
-                    if (SpellHelper.CheckReflect((int)this.Circle, ref source, ref mob))
-                    {
-                        Timer.DelayCall(TimeSpan.FromSeconds(.5), () =>
-                        {
-                            source.MovingParticles(mob, 0x379F, 7, 0, false, true, 3043, 4043, 0x211);
-                            source.PlaySound(0x20A);
-                        });
-                    }
-                }
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( CheckHSequence( m ) )
+			{
+				Mobile source = Caster;
 
-                double damage = 0;
+				SpellHelper.Turn( Caster, m );
 
-                if (Core.AOS)
-                {
-                    damage = this.GetNewAosDamage(40, 1, 5, m);
-                }
-                else if (mob != null)
-                {
-                    damage = Utility.Random(24, 18);
+				SpellHelper.CheckReflect( (int)this.Circle, ref source, ref m );
 
-                    if (this.CheckResisted(mob))
-                    {
-                        damage *= 0.75;
+				double damage;
 
-                        mob.SendLocalizedMessage(501783); // You feel yourself resisting magical energy.
-                    }
+				if ( Core.AOS )
+				{
+					damage = GetNewAosDamage( 40, 1, 5, m );
+				}
+				else
+				{
+					damage = Utility.Random( 24, 18 );
 
-                    // Scale damage based on evalint and resist
-                    damage *= this.GetDamageScalar(mob);
-                }
+					if ( CheckResisted( m ) )
+					{
+						damage *= 0.75;
 
-                // Do the effects
-                this.Caster.MovingParticles(m, 0x379F, 7, 0, false, true, 3043, 4043, 0x211);
-                this.Caster.PlaySound(0x20A);
+						m.SendLocalizedMessage( 501783 ); // You feel yourself resisting magical energy.
+					}
 
-                if (damage > 0)
-                {
-                    // Deal the damage
-                    SpellHelper.Damage(this, mob != null ? mob : m, damage, 0, 0, 0, 0, 100);
-                }
-            }
+					// Scale damage based on evalint and resist
+					damage *= GetDamageScalar( m );
+				}
 
-            this.FinishSequence();
-        }
+				// Do the effects
+				source.MovingParticles( m, 0x379F, 7, 0, false, true, 3043, 4043, 0x211 );
+				source.PlaySound( 0x20A );
 
-        private class InternalTarget : Target
-        {
-            private readonly EnergyBoltSpell m_Owner;
-            public InternalTarget(EnergyBoltSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Harmful)
-            {
-                this.m_Owner = owner;
-            }
+				// Deal the damage
+				SpellHelper.Damage( this, m, damage, 0, 0, 0, 0, 100 );
+			}
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IDamageable)
-                    this.m_Owner.Target((IDamageable)o);
-            }
+			FinishSequence();
+		}
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+		private class InternalTarget : Target
+		{
+			private EnergyBoltSpell m_Owner;
+
+			public InternalTarget( EnergyBoltSpell owner ) : base( 12, false, TargetFlags.Harmful )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+					m_Owner.Target( (Mobile)o );
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

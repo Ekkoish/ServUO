@@ -1,87 +1,83 @@
 using System;
-using Server.Items;
 using Server.Targeting;
+using Server.Network;
+using Server.Items;
 
 namespace Server.Spells.Second
 {
-    public class RemoveTrapSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Remove Trap", "An Jux",
-            212,
-            9001,
-            Reagent.Bloodmoss,
-            Reagent.SulfurousAsh);
-        public RemoveTrapSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class RemoveTrapSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Remove Trap", "An Jux",
+				SpellCircle.Second,
+				212,
+				9001,
+				Reagent.Bloodmoss,
+				Reagent.SulfurousAsh
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Second;
-            }
-        }
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-            this.Caster.SendMessage("What do you wish to untrap?");
-        }
+		public RemoveTrapSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(TrapableContainer item)
-        {
-            if (!this.Caster.CanSee(item))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (item.TrapType != TrapType.None && item.TrapType != TrapType.MagicTrap)
-            {
-                base.DoFizzle();
-            }
-            else if (this.CheckSequence())
-            {
-                SpellHelper.Turn(this.Caster, item);
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+			Caster.SendMessage( "What do you wish to untrap?" );
+		}
 
-                Point3D loc = item.GetWorldLocation();
+		public void Target( TrapableContainer item )
+		{
+			if ( !Caster.CanSee( item ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( item.TrapType != TrapType.None && item.TrapType != TrapType.MagicTrap )
+			{
+				base.DoFizzle();
+			}
+			else if ( CheckSequence() )
+			{
+				SpellHelper.Turn( Caster, item );
 
-                Effects.SendLocationParticles(EffectItem.Create(loc, item.Map, EffectItem.DefaultDuration), 0x376A, 9, 32, 5015);
-                Effects.PlaySound(loc, item.Map, 0x1F0);
+				Point3D loc = item.GetWorldLocation();
 
-                item.TrapType = TrapType.None;
-                item.TrapPower = 0;
-                item.TrapLevel = 0;
-            }
+				Effects.SendLocationParticles( EffectItem.Create( loc, item.Map, EffectItem.DefaultDuration ), 0x376A, 9, 32, 5015 );
+				Effects.PlaySound( loc, item.Map, 0x1F0 );
 
-            this.FinishSequence();
-        }
+				item.TrapType = TrapType.None;
+				item.TrapPower = 0;
+				item.TrapLevel = 0;
+			}
 
-        private class InternalTarget : Target
-        {
-            private readonly RemoveTrapSpell m_Owner;
-            public InternalTarget(RemoveTrapSpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.None)
-            {
-                this.m_Owner = owner;
-            }
+			FinishSequence();
+		}
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is TrapableContainer)
-                {
-                    this.m_Owner.Target((TrapableContainer)o);
-                }
-                else
-                {
-                    from.SendMessage("You can't disarm that");
-                }
-            }
+		private class InternalTarget : Target
+		{
+			private RemoveTrapSpell m_Owner;
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
-    }
+			public InternalTarget( RemoveTrapSpell owner ) : base( 12, false, TargetFlags.None )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is TrapableContainer )
+				{
+					m_Owner.Target( (TrapableContainer)o );
+				}
+				else
+				{
+					from.SendMessage( "You can't disarm that" );
+				}
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

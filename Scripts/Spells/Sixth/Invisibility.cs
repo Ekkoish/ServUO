@@ -1,139 +1,123 @@
 using System;
 using System.Collections;
-using Server.Items;
+using Server;
 using Server.Targeting;
+using Server.Items;
 
 namespace Server.Spells.Sixth
 {
-    public class InvisibilitySpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Invisibility", "An Lor Xen",
-            206,
-            9002,
-            Reagent.Bloodmoss,
-            Reagent.Nightshade);
-        private static readonly Hashtable m_Table = new Hashtable();
-        public InvisibilitySpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class InvisibilitySpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Invisibility", "An Lor Xen",
+				SpellCircle.Sixth,
+				206,
+				9002,
+				Reagent.Bloodmoss,
+				Reagent.Nightshade
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Sixth;
-            }
-        }
-        public static bool HasTimer(Mobile m)
-        {
-            return m_Table[m] != null;
-        }
+		public InvisibilitySpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public static void RemoveTimer(Mobile m)
-        {
-            Timer t = (Timer)m_Table[m];
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-            if (t != null)
-            {
-                t.Stop();
-                m_Table.Remove(m);
-            }
-        }
+		public void Target( Mobile m )
+		{
+			if ( !Caster.CanSee( m ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( m is Mobiles.BaseVendor || m is Mobiles.PlayerVendor || m is Mobiles.PlayerBarkeeper || m.AccessLevel > Caster.AccessLevel )
+			{
+				Caster.SendLocalizedMessage( 501857 ); // This spell won't work on that!
+			}
+			else if ( CheckBSequence( m ) )
+			{
+				SpellHelper.Turn( Caster, m );
 
-        public override bool CheckCast()
-        {
-            if (Engines.ConPVP.DuelContext.CheckSuddenDeath(this.Caster))
-            {
-                this.Caster.SendMessage(0x22, "You cannot cast this spell when in sudden death.");
-                return false;
-            }
+				Effects.SendLocationParticles( EffectItem.Create( new Point3D( m.X, m.Y, m.Z + 16 ), Caster.Map, EffectItem.DefaultDuration ), 0x376A, 10, 15, 5045 );
+				m.PlaySound( 0x3C4 );
 
-            return base.CheckCast();
-        }
+				m.Hidden = true;
 
-        public override void OnCast()
-        {
-            this.Caster.Target = new InternalTarget(this);
-        }
+				BuffInfo.RemoveBuff( m, BuffIcon.HidingAndOrStealth );
+				BuffInfo.AddBuff( m, new BuffInfo( BuffIcon.Invisibility, 1075825 ) );	//Invisibility/Invisible
 
-        public void Target(Mobile m)
-        {
-            if (!this.Caster.CanSee(m))
-            {
-                this.Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (m is Mobiles.BaseVendor || m is Mobiles.PlayerVendor || m is Mobiles.PlayerBarkeeper || m.AccessLevel > this.Caster.AccessLevel)
-            {
-                this.Caster.SendLocalizedMessage(501857); // This spell won't work on that!
-            }
-            else if (this.CheckBSequence(m))
-            {
-                SpellHelper.Turn(this.Caster, m);
+				RemoveTimer( m );
 
-                Effects.SendLocationParticles(EffectItem.Create(new Point3D(m.X, m.Y, m.Z + 16), this.Caster.Map, EffectItem.DefaultDuration), 0x376A, 10, 15, 5045);
-                m.PlaySound(0x3C4);
+				TimeSpan duration = TimeSpan.FromSeconds( ((6 * Caster.Skills.Magery.Fixed) / 50) + 1 );
 
-                m.Hidden = true;
-                m.Combatant = null;
-                m.Warmode = false;
+				Timer t = new InternalTimer( m, duration );
 
-                RemoveTimer(m);
+				m_Table[m] = t;
 
-                TimeSpan duration = TimeSpan.FromSeconds(((1.2 * this.Caster.Skills.Magery.Fixed) / 10));
+				t.Start();
+			}
 
-                Timer t = new InternalTimer(m, duration);
+			FinishSequence();
+		}
 
-                BuffInfo.RemoveBuff(m, BuffIcon.HidingAndOrStealth);
-                BuffInfo.AddBuff(m, new BuffInfo(BuffIcon.Invisibility, 1075825, duration, m));	//Invisibility/Invisible
+		private static Hashtable m_Table = new Hashtable();
 
-                m_Table[m] = t;
+		public static bool HasTimer( Mobile m )
+		{
+			return m_Table[m] != null;
+		}
 
-                t.Start();
-            }
+		public static void RemoveTimer( Mobile m )
+		{
+			Timer t = (Timer)m_Table[m];
 
-            this.FinishSequence();
-        }
+			if ( t != null )
+			{
+				t.Stop();
+				m_Table.Remove( m );
+			}
+		}
 
-        public class InternalTarget : Target
-        {
-            private readonly InvisibilitySpell m_Owner;
-            public InternalTarget(InvisibilitySpell owner)
-                : base(Core.ML ? 10 : 12, false, TargetFlags.Beneficial)
-            {
-                this.m_Owner = owner;
-            }
+		private class InternalTimer : Timer
+		{
+			private Mobile m_Mobile;
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is Mobile)
-                {
-                    this.m_Owner.Target((Mobile)o);
-                }
-            }
+			public InternalTimer( Mobile m, TimeSpan duration ) : base( duration )
+			{
+				Priority = TimerPriority.OneSecond;
+				m_Mobile = m;
+			}
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                this.m_Owner.FinishSequence();
-            }
-        }
+			protected override void OnTick()
+			{
+				m_Mobile.RevealingAction();
+				RemoveTimer( m_Mobile );
+			}
+		}
 
-        private class InternalTimer : Timer
-        {
-            private readonly Mobile m_Mobile;
-            public InternalTimer(Mobile m, TimeSpan duration)
-                : base(duration)
-            {
-                this.Priority = TimerPriority.OneSecond;
-                this.m_Mobile = m;
-            }
+		public class InternalTarget : Target
+		{
+			private InvisibilitySpell m_Owner;
 
-            protected override void OnTick()
-            {
-                this.m_Mobile.RevealingAction();
-                RemoveTimer(this.m_Mobile);
-            }
-        }
-    }
+			public InternalTarget( InvisibilitySpell owner ) : base( 12, false, TargetFlags.Beneficial )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is Mobile )
+				{
+					m_Owner.Target( (Mobile)o );
+				}
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }

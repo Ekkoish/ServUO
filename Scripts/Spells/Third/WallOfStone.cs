@@ -1,225 +1,208 @@
 using System;
-using Server.Misc;
-using Server.Mobiles;
 using Server.Targeting;
+using Server.Network;
+using Server.Misc;
+using Server.Items;
 
 namespace Server.Spells.Third
 {
-    public class WallOfStoneSpell : MagerySpell
-    {
-        private static readonly SpellInfo m_Info = new SpellInfo(
-            "Wall of Stone", "In Sanct Ylem",
-            227,
-            9011,
-            false,
-            Reagent.Bloodmoss,
-            Reagent.Garlic);
-        public WallOfStoneSpell(Mobile caster, Item scroll)
-            : base(caster, scroll, m_Info)
-        {
-        }
+	public class WallOfStoneSpell : Spell
+	{
+		private static SpellInfo m_Info = new SpellInfo(
+				"Wall of Stone", "In Sanct Ylem",
+				SpellCircle.Third,
+				227,
+				9011,
+				false,
+				Reagent.Bloodmoss,
+				Reagent.Garlic
+			);
 
-        public override SpellCircle Circle
-        {
-            get
-            {
-                return SpellCircle.Third;
-            }
-        }
-        public override void OnCast()
-        {
-            Caster.Target = new InternalTarget(this);
-        }
+		public WallOfStoneSpell( Mobile caster, Item scroll ) : base( caster, scroll, m_Info )
+		{
+		}
 
-        public void Target(IPoint3D p)
-        {
-            if (!Caster.CanSee(p))
-            {
-                Caster.SendLocalizedMessage(500237); // Target can not be seen.
-            }
-            else if (SpellHelper.CheckTown(p, Caster) && SpellHelper.CheckWater(new Point3D(p), Caster.Map) && CheckSequence())
-            {
-                SpellHelper.Turn(Caster, p);
+		public override void OnCast()
+		{
+			Caster.Target = new InternalTarget( this );
+		}
 
-                SpellHelper.GetSurfaceTop(ref p);
+		public void Target( IPoint3D p )
+		{
+			if ( !Caster.CanSee( p ) )
+			{
+				Caster.SendLocalizedMessage( 500237 ); // Target can not be seen.
+			}
+			else if ( SpellHelper.CheckTown( p, Caster ) && CheckSequence() )
+			{
+				SpellHelper.Turn( Caster, p );
 
-                int dx = Caster.Location.X - p.X;
-                int dy = Caster.Location.Y - p.Y;
-                int rx = (dx - dy) * 44;
-                int ry = (dx + dy) * 44;
+				SpellHelper.GetSurfaceTop( ref p );
 
-                bool eastToWest;
+				int dx = Caster.Location.X - p.X;
+				int dy = Caster.Location.Y - p.Y;
+				int rx = (dx - dy) * 44;
+				int ry = (dx + dy) * 44;
 
-                if (rx >= 0 && ry >= 0)
-                {
-                    eastToWest = false;
-                }
-                else if (rx >= 0)
-                {
-                    eastToWest = true;
-                }
-                else if (ry >= 0)
-                {
-                    eastToWest = true;
-                }
-                else
-                {
-                    eastToWest = false;
-                }
+				bool eastToWest;
 
-                Effects.PlaySound(p, Caster.Map, 0x1F6);
+				if ( rx >= 0 && ry >= 0 )
+				{
+					eastToWest = false;
+				}
+				else if ( rx >= 0 )
+				{
+					eastToWest = true;
+				}
+				else if ( ry >= 0 )
+				{
+					eastToWest = true;
+				}
+				else
+				{
+					eastToWest = false;
+				}
 
-                for (int i = -1; i <= 1; ++i)
-                {
-                    Point3D loc = new Point3D(eastToWest ? p.X + i : p.X, eastToWest ? p.Y : p.Y + i, p.Z);
+				Effects.PlaySound( p, Caster.Map, 0x1F6 );
 
-                    if (SpellHelper.CheckWater(loc, Caster.Map))
-                    {
-                        Item item = new InternalItem(loc, Caster.Map, Caster);
-                        Effects.SendLocationParticles(item, 0x376A, 9, 10, 5025);
-                    }
-                }
-            }
+				for ( int i = -1; i <= 1; ++i )
+				{
+					Point3D loc = new Point3D( eastToWest ? p.X + i : p.X, eastToWest ? p.Y : p.Y + i, p.Z );
+					bool canFit = SpellHelper.AdjustField( ref loc, Caster.Map, 22, true );
 
-            FinishSequence();
-        }
+					//Effects.SendLocationParticles( EffectItem.Create( loc, Caster.Map, EffectItem.DefaultDuration ), 0x376A, 9, 10, 5025 );
 
-        [DispellableField]
-        private class InternalItem : Item
-        {
-            private readonly Mobile m_Caster;
-            private Timer m_Timer;
-            private DateTime m_End;
-            public InternalItem(Point3D loc, Map map, Mobile caster)
-                : base(0x82)
-            {
-                Movable = false;
+					if ( !canFit )
+						continue;
 
-                MoveToWorld(loc, map);
+					Item item = new InternalItem( loc, Caster.Map, Caster );
 
-                m_Caster = caster;
+					Effects.SendLocationParticles( item, 0x376A, 9, 10, 5025 );
 
-                if (Deleted)
-                    return;
+					//new InternalItem( loc, Caster.Map, Caster );
+				}
+			}
 
-                m_Timer = new InternalTimer(this, TimeSpan.FromSeconds(10.0));
-                m_Timer.Start();
+			FinishSequence();
+		}
 
-                m_End = DateTime.UtcNow + TimeSpan.FromSeconds(10.0);
-            }
+		[DispellableField]
+		private class InternalItem : Item
+		{
+			private Timer m_Timer;
+			private DateTime m_End;
 
-            public InternalItem(Serial serial)
-                : base(serial)
-            {
-            }
+			public override bool BlocksFit{ get{ return true; } }
 
-            public override bool BlocksFit
-            {
-                get
-                {
-                    return true;
-                }
-            }
-            public override void Serialize(GenericWriter writer)
-            {
-                base.Serialize(writer);
+			public InternalItem( Point3D loc, Map map, Mobile caster ) : base( 0x80 )
+			{
+				Visible = false;
+				Movable = false;
 
-                writer.Write((int)1); // version
+				MoveToWorld( loc, map );
 
-                writer.WriteDeltaTime(m_End);
-            }
+				if ( caster.InLOS( this ) )
+					Visible = true;
+				else
+					Delete();
 
-            public override void Deserialize(GenericReader reader)
-            {
-                base.Deserialize(reader);
+				if ( Deleted )
+					return;
 
-                int version = reader.ReadInt();
+				m_Timer = new InternalTimer( this, TimeSpan.FromSeconds( 10.0 ) );
+				m_Timer.Start();
 
-                switch ( version )
-                {
-                    case 1:
-                        {
-                            m_End = reader.ReadDeltaTime();
+				m_End = DateTime.Now + TimeSpan.FromSeconds( 10.0 );
+			}
 
-                            m_Timer = new InternalTimer(this, m_End - DateTime.UtcNow);
-                            m_Timer.Start();
+			public InternalItem( Serial serial ) : base( serial )
+			{
+			}
 
-                            break;
-                        }
-                    case 0:
-                        {
-                            TimeSpan duration = TimeSpan.FromSeconds(10.0);
+			public override void Serialize( GenericWriter writer )
+			{
+				base.Serialize( writer );
 
-                            m_Timer = new InternalTimer(this, duration);
-                            m_Timer.Start();
+				writer.Write( (int) 1 ); // version
 
-                            m_End = DateTime.UtcNow + duration;
+				writer.WriteDeltaTime( m_End );
+			}
 
-                            break;
-                        }
-                }
-            }
+			public override void Deserialize( GenericReader reader )
+			{
+				base.Deserialize( reader );
 
-            public override bool OnMoveOver(Mobile m)
-            {
-                int noto;
+				int version = reader.ReadInt();
 
-                if (m is PlayerMobile)
-                {
-                    noto = Notoriety.Compute(m_Caster, m);
-                    if (noto == Notoriety.Enemy || noto == Notoriety.Ally)
-                        return false;
+				switch ( version )
+				{
+					case 1:
+					{
+						m_End = reader.ReadDeltaTime();
 
-                    if (m.Map != null && (m.Map.Rules & MapRules.FreeMovement) == 0)
-                        return false;
-                }
-                return base.OnMoveOver(m);
-            }
+						m_Timer = new InternalTimer( this, m_End - DateTime.Now );
+						m_Timer.Start();
 
-            public override void OnAfterDelete()
-            {
-                base.OnAfterDelete();
+						break;
+					}
+					case 0:
+					{
+						TimeSpan duration = TimeSpan.FromSeconds( 10.0 );
 
-                if (m_Timer != null)
-                    m_Timer.Stop();
-            }
+						m_Timer = new InternalTimer( this, duration );
+						m_Timer.Start();
 
-            private class InternalTimer : Timer
-            {
-                private readonly InternalItem m_Item;
-                public InternalTimer(InternalItem item, TimeSpan duration)
-                    : base(duration)
-                {
-                    Priority = TimerPriority.OneSecond;
-                    m_Item = item;
-                }
+						m_End = DateTime.Now + duration;
 
-                protected override void OnTick()
-                {
-                    m_Item.Delete();
-                }
-            }
-        }
+						break;
+					}
+				}
+			}
 
-        private class InternalTarget : Target
-        {
-            private readonly WallOfStoneSpell m_Owner;
-            public InternalTarget(WallOfStoneSpell owner)
-                : base(Core.ML ? 10 : 12, true, TargetFlags.None)
-            {
-                m_Owner = owner;
-            }
+			public override void OnAfterDelete()
+			{
+				base.OnAfterDelete();
 
-            protected override void OnTarget(Mobile from, object o)
-            {
-                if (o is IPoint3D)
-                    m_Owner.Target((IPoint3D)o);
-            }
+				if ( m_Timer != null )
+					m_Timer.Stop();
+			}
 
-            protected override void OnTargetFinish(Mobile from)
-            {
-                m_Owner.FinishSequence();
-            }
-        }
-    }
+			private class InternalTimer : Timer
+			{
+				private InternalItem m_Item;
+
+				public InternalTimer( InternalItem item, TimeSpan duration ) : base( duration )
+				{
+					Priority = TimerPriority.OneSecond;
+					m_Item = item;
+				}
+
+				protected override void OnTick()
+				{
+					m_Item.Delete();
+				}
+			}
+		}
+
+		private class InternalTarget : Target
+		{
+			private WallOfStoneSpell m_Owner;
+
+			public InternalTarget( WallOfStoneSpell owner ) : base( 12, true, TargetFlags.None )
+			{
+				m_Owner = owner;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				if ( o is IPoint3D )
+					m_Owner.Target( (IPoint3D)o );
+			}
+
+			protected override void OnTargetFinish( Mobile from )
+			{
+				m_Owner.FinishSequence();
+			}
+		}
+	}
 }
