@@ -4,24 +4,25 @@ using Server.Spells;
 
 namespace Server.Items
 {
-	public class BookOfBushido : Spellbook
+	public class BookOfExoticWeaponry : Spellbook
 	{
-		public override SpellbookType SpellbookType{ get{ return SpellbookType.Samurai; } }
-		public override int BookOffset{ get{ return 400; } }
-		public override int BookCount{ get{ return 6; } }
+		public override SpellbookType SpellbookType{ get{ return SpellbookType.Ninja; } }
+		public override int BookOffset{ get{ return 500; } }
+		public override int BookCount{ get{ return 8; } }
+
 
 		[Constructable]
-		public BookOfBushido() : this( (ulong)0x3F )
+		public BookOfExoticWeaponry() : this( (ulong)0xFF )
 		{
 		}
 
 		[Constructable]
-		public BookOfBushido( ulong content ) : base( content, 0x238C )
+		public BookOfExoticWeaponry( ulong content ) : base( content, 0x23A0 )
 		{
 			Layer = (Core.ML ? Layer.OneHanded : Layer.Invalid);
 		}
 
-		public BookOfBushido( Serial serial ) : base( serial )
+		public BookOfExoticWeaponry( Serial serial ) : base( serial )
 		{
 		}
 
@@ -29,7 +30,7 @@ namespace Server.Items
 		{
 			base.Serialize( writer );
 
-			writer.Write( (int) 1 ); // version
+			writer.Write( (int)1 ); // version
 		}
 
 		public override void Deserialize( GenericReader reader )
