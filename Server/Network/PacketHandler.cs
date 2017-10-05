@@ -1,23 +1,39 @@
-#region Header
-// **********
-// ServUO - PacketHandler.cs
-// **********
-#endregion
+/***************************************************************************
+ *                              PacketHandler.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: PacketHandler.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
+
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
+using System;
 
 namespace Server.Network
 {
-	public delegate void OnPacketReceive(NetState state, PacketReader pvSrc);
-
-	public delegate bool ThrottlePacketCallback(NetState state);
+	public delegate void OnPacketReceive( NetState state, PacketReader pvSrc );
+	public delegate bool ThrottlePacketCallback( NetState state );
 
 	public class PacketHandler
 	{
-		private readonly int m_PacketID;
-		private readonly int m_Length;
-		private readonly bool m_Ingame;
-		private readonly OnPacketReceive m_OnReceive;
+		private int m_PacketID;
+		private int m_Length;
+		private bool m_Ingame;
+		private OnPacketReceive m_OnReceive;
+		private ThrottlePacketCallback m_ThrottleCallback;
 
-		public PacketHandler(int packetID, int length, bool ingame, OnPacketReceive onReceive)
+		public PacketHandler( int packetID, int length, bool ingame, OnPacketReceive onReceive )
 		{
 			m_PacketID = packetID;
 			m_Length = length;
@@ -25,14 +41,42 @@ namespace Server.Network
 			m_OnReceive = onReceive;
 		}
 
-		public int PacketID { get { return m_PacketID; } }
+		public int PacketID
+		{
+			get
+			{
+				return m_PacketID;
+			}
+		}
 
-		public int Length { get { return m_Length; } }
+		public int Length
+		{
+			get
+			{
+				return m_Length;
+			}
+		}
 
-		public OnPacketReceive OnReceive { get { return m_OnReceive; } }
+		public OnPacketReceive OnReceive
+		{
+			get
+			{
+				return m_OnReceive;
+			}
+		}
 
-		public ThrottlePacketCallback ThrottleCallback { get; set; }
+		public ThrottlePacketCallback ThrottleCallback
+		{
+			get{ return m_ThrottleCallback; }
+			set{ m_ThrottleCallback = value; }
+		}
 
-		public bool Ingame { get { return m_Ingame; } }
+		public bool Ingame
+		{
+			get
+			{
+				return m_Ingame;
+			}
+		}
 	}
 }

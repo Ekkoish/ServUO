@@ -1,12 +1,26 @@
-#region Header
-// **********
-// ServUO - BufferPool.cs
-// **********
-#endregion
+/***************************************************************************
+ *                               BufferPool.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: BufferPool.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
+using System;
+using System.Collections;
 using System.Collections.Generic;
-#endregion
 
 namespace Server.Network
 {
@@ -14,26 +28,20 @@ namespace Server.Network
 	{
 		private static List<BufferPool> m_Pools = new List<BufferPool>();
 
-		public static List<BufferPool> Pools { get { return m_Pools; } set { m_Pools = value; } }
+		public static List<BufferPool> Pools{ get{ return m_Pools; } set{ m_Pools = value; } }
 
-		private readonly string m_Name;
+		private string m_Name;
 
-		private readonly int m_InitialCapacity;
-		private readonly int m_BufferSize;
+		private int m_InitialCapacity;
+		private int m_BufferSize;
 
 		private int m_Misses;
 
-		private readonly Queue<byte[]> m_FreeBuffers;
+		private Queue<byte[]> m_FreeBuffers;
 
-		public void GetInfo(
-			out string name,
-			out int freeCount,
-			out int initialCapacity,
-			out int currentCapacity,
-			out int bufferSize,
-			out int misses)
+		public void GetInfo( out string name, out int freeCount, out int initialCapacity, out int currentCapacity, out int bufferSize, out int misses )
 		{
-			lock (this)
+			lock ( this )
 			{
 				name = m_Name;
 				freeCount = m_FreeBuffers.Count;
@@ -44,59 +52,51 @@ namespace Server.Network
 			}
 		}
 
-		public BufferPool(string name, int initialCapacity, int bufferSize)
+		public BufferPool( string name, int initialCapacity, int bufferSize )
 		{
 			m_Name = name;
 
 			m_InitialCapacity = initialCapacity;
 			m_BufferSize = bufferSize;
 
-			m_FreeBuffers = new Queue<byte[]>(initialCapacity);
+			m_FreeBuffers = new Queue<byte[]>( initialCapacity );
 
-			for (int i = 0; i < initialCapacity; ++i)
-			{
-				m_FreeBuffers.Enqueue(new byte[bufferSize]);
-			}
+			for ( int i = 0; i < initialCapacity; ++i )
+				m_FreeBuffers.Enqueue( new byte[bufferSize] );
 
-			lock (m_Pools)
-				m_Pools.Add(this);
+			lock ( m_Pools )
+				m_Pools.Add( this );
 		}
 
 		public byte[] AcquireBuffer()
 		{
-			lock (this)
+			lock ( this )
 			{
-				if (m_FreeBuffers.Count > 0)
-				{
+				if ( m_FreeBuffers.Count > 0 )
 					return m_FreeBuffers.Dequeue();
-				}
 
 				++m_Misses;
 
-				for (int i = 0; i < m_InitialCapacity; ++i)
-				{
-					m_FreeBuffers.Enqueue(new byte[m_BufferSize]);
-				}
+				for ( int i = 0; i < m_InitialCapacity; ++i )
+					m_FreeBuffers.Enqueue( new byte[m_BufferSize] );
 
 				return m_FreeBuffers.Dequeue();
 			}
 		}
 
-		public void ReleaseBuffer(byte[] buffer)
+		public void ReleaseBuffer( byte[] buffer )
 		{
-			if (buffer == null)
-			{
+			if ( buffer == null )
 				return;
-			}
 
-			lock (this)
-				m_FreeBuffers.Enqueue(buffer);
+			lock ( this )
+				m_FreeBuffers.Enqueue( buffer );
 		}
 
 		public void Free()
 		{
-			lock (m_Pools)
-				m_Pools.Remove(this);
+			lock ( m_Pools )
+				m_Pools.Remove( this );
 		}
 	}
 }
