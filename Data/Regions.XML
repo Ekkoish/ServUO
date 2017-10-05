@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ServerRegions>
+  <Facet name="Felucca">
+    <region priority="10" name="Stone Bear Mines">
+      <rect x="2606" y="2291" width="93" height="89" />
+    </region>
+    <region priority="10" name="The Heath">
+      <rect x="1297" y="935" width="286" height="240" />
+    </region>
+    <region priority="25" name="The Uqbari Penninsula">
+      <rect x="58" y="1846" width="379" height="330" />
+      <rect x="183" y="1689" width="297" height="323" />
+    </region>
+    <region priority="25" name="Caerdwyr">
+      <rect x="1179" y="2972" width="98" height="134" />
+      <rect x="1277" y="2980" width="34" height="92" />
+    </region>
+    <region priority="25" name="Insula Magna">
+      <rect x="318" y="498" width="152" height="126" />
+    </region>
+    <region priority="25" name="Memnons Crater">
+      <rect x="1099" y="1930" width="142" height="91" />
+    </region>
+    <region priority="5" name="the Wasteland">
+      <rect x="2712" y="2848" width="284" height="200" />
+    </region>
+    <region type="DungeonRegion" priority="1" name="the Depths">
+      <rect x="5350" y="255" width="734" height="3210" />
+    </region>
+    <region type="DungeonRegion" priority="10" name="the Ruins of Old Khemet">
+      <rect x="5800" y="739" width="254" height="278" />
+    </region>
+    <region priority="3" name="the Character Creation Chamber">
+      <rect x="5386" y="1163" width="80" height="102" />
+    </region>
+    <region priority="10" name="The South">
+      <rect x="1222" y="2735" width="1201" height="1033" />
+      <rect x="992" y="3138" width="1674" height="653" />
+      <region priority="90" name="Lurieth">
+        <rect x="1206" y="3315" width="299" height="299" />
+      </region>
+      <region priority="5" name="Southern Wilds">
+        <rect x="1048" y="3191" width="141" height="520" />
+        <rect x="1189" y="3558" width="110" height="158" />
+        <rect x="1528" y="2680" width="1120" height="1038" />
+        <rect x="1284" y="2794" width="389" height="144" />
+      </region>
+    </region>
+    <region priority="10" name="The North">
+      <rect x="1093" y="1075" width="1625" height="1481" />
+      <region priority="5" name="Northern Wilds">
+        <rect x="1216" y="1576" width="631" height="875" />
+        <rect x="1832" y="1853" width="385" height="527" />
+        <rect x="2177" y="1765" width="412" height="484" />
+      </region>
+      <region priority="90" name="Riverkeep">
+        <rect x="1824" y="1501" width="353" height="367" />
+      </region>
+      <region priority="25" name="Krake">
+        <rect x="1357" y="2053" width="115" height="94" />
+      </region>
+    </region>
+    <region priority="15" name="The East">
+      <rect x="2506" y="290" width="2773" height="3801" />
+      <region priority="25" name="KDath Mal">
+        <rect x="3323" y="2715" width="60" height="63" />
+      </region>
+    </region>
+    <region priority="25" name="The Frost Veldt">
+      <rect x="2894" y="910" width="837" height="518" />
+      <rect x="2839" y="1292" width="79" height="125" />
+      <rect x="2787" y="1329" width="110" height="84" />
+      <rect x="3247" y="1059" width="688" height="595" />
+      <rect x="3816" y="1643" width="202" height="156" />
+    </region>
+    <region priority="25" name="The Frozen Wastes">
+      <rect x="3726" y="347" width="510" height="902" />
+    </region>
+    <region priority="15" name="The West">
+      <rect x="1" y="1735" width="1189" height="1382" />
+      <region priority="20" name="Fallview">
+        <rect x="742" y="1866" width="119" height="67" />
+      </region>
+      <region priority="20" name="Old Azhur">
+        <rect x="699" y="2724" width="78" height="103" />
+      </region>
+    </region>
+    <region priority="25" name="The Jungles of Azhur">
+      <rect x="285" y="2192" width="862" height="717" />
+    </region>
+    <region priority="25" name="The Swamp">
+      <rect x="76" y="2367" width="269" height="705" />
+      <rect x="350" y="2828" width="241" height="433" />
+      <rect x="586" y="2947" width="247" height="182" />
+      <rect x="813" y="3065" width="180" height="68" />
+    </region>
+    <region priority="25" name="The Desert">
+      <rect x="1051" y="534" width="1337" height="561" />
+      <rect x="834" y="1094" width="737" height="158" />
+      <rect x="516" y="1249" width="911" height="191" />
+      <rect x="464" y="1433" width="838" height="108" />
+      <rect x="466" y="1428" width="543" height="366" />
+    </region>
+    <region priority="25" name="The Islands">
+      <rect x="216" y="774" width="382" height="299" />
+      <rect x="771" y="227" width="468" height="301" />
+      <rect x="3285" y="202" width="240" height="267" />
+      <rect x="4479" y="382" width="575" height="435" />
+      <rect x="4620" y="746" width="359" height="659" />
+      <rect x="4569" y="1642" width="203" height="154" />
+      <rect x="4447" y="1774" width="749" height="791" />
+      <rect x="3884" y="3352" width="697" height="579" />
+      <rect x="3597" y="3693" width="249" height="151" />
+    </region>
+  </Facet>
+  <Facet name="Trammel" />
+  <Facet name="Ilshenar" />
+  <Facet name="Malas" />
+  <Facet name="Tokuno" />
+  <Facet name="TerMur" />
+</ServerRegions>

@@ -11,20 +11,7 @@
 		Akashi, Niji, Yochika, Toyoka, Wayo, Iroha, Nakai, Ayatsumi, Wayu, Yumiha, Enji,
 		Aasin, Akela, Chiwa, Suni, Wakumi, Ruri, Tama
 	</namelist>
-  <namelist type="Elf Female">
-		Besran, Caraphrestol, Edhelarth, Fiaro, Fisonna, Ilithia, Jealian
-, Kiliatha, Merilcheleg
-, Nelfael, Nimbilin, Silivin, Versal 
-	</namelist>
-  <namelist type="Elf Male">
-		Azayn, Arnen, Coribrar, Daegalen, Dhoudrim, Elwing, Gilthathar, Hanchall, Kandrialis
-, Koliumder, Laeroll, Nemin, Ormaen, Theninorn 
-	</namelist>
-  <namelist type="Gargoyle Female">
-		Ansikart, Ane'Ska, Artaios, Aurvidlem, Betra, Forskis, Inmanilem, Khalora, Quaeven, Runeb, Silamo, Sil'Cor, Tir'Pena, T'Lem, Zu'Teika</namelist>
-  <namelist type="Gargoyle Male">
-		Anmanivas, Au'Rek, Bolesh, Draxinusom, Foranamo, Ga'Kop, G'Krill, Hir'Roffe, Inwisloklem, Naxatilor, Sai'Gem, Sin'Vraal, Teregus, Valkadesh, Zoterios</namelist>
-  <namelist type="bird">
+	<namelist type="bird">
 		a wren, a swallow, a warbler, a nuthatch, a chickadee, a thrush, 
 		a nightingale, a starling, a skylark, a finch, a crossbill, a sparrow, a towhee, 
 		a woodpecker, a kingfisher, a tern, a plover, a lapwing, a hawk, a cuckoo, a swift
@@ -63,9 +50,6 @@
 	<namelist type="gargoyle vendor">
 		Ansiraal, Aurlem, Betra, Draxsom, Fodus, Forbrak, ForLem, Horffe, Inforlem, Invis,
 		Laplem, Naxator, Quaeven, Sarpling, Silamo, Tereg, Volesh, Vraal, WisSur
-	</namelist>
-	<namelist type="gargoyle quester">
-		Agralem, Beninort, Ansikart, Aurvidlem
 	</namelist>
 	<namelist type="centaur">
 		Sophanon, Caryax, Daemeox, Phlegon, Aerophus, Euforus, Pallax, 
@@ -658,4 +642,4 @@
 		Yero, Yervant, York, Yusuf, Yves, Zachariah, Zachary, Zackery, Zaid, Zaide, 
 		Zane, Zaniel, Zann, Zared, Zarek, Zeke, Zenon, Zion, Ziven, Zorn
 	</namelist>
-</names>
+</names>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
