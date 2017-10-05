@@ -1,177 +1,141 @@
-#region Header
-// **********
-// ServUO - BaseMulti.cs
-// **********
-#endregion
+/***************************************************************************
+ *                                BaseMulti.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: BaseMulti.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
-using Server.Network;
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
-#endregion
 
 namespace Server.Items
 {
 	public class BaseMulti : Item
 	{
 		[Constructable]
-		public BaseMulti(int itemID)
-			: base(itemID)
+		public BaseMulti( int itemID ) : base( itemID )
 		{
 			Movable = false;
 		}
 
-		public BaseMulti(Serial serial)
-			: base(serial)
-		{ }
-
-		[CommandProperty(AccessLevel.GameMaster)]
-		public override int ItemID
+		public BaseMulti( Serial serial ) : base( serial )
 		{
-			get { return base.ItemID; }
-			set
-			{
-				if (base.ItemID != value)
-				{
-					Map facet = (Parent == null ? Map : null);
-
-					if (facet != null)
-					{
-						facet.OnLeave(this);
-					}
-
-					base.ItemID = value;
-
-					if (facet != null)
-					{
-						facet.OnEnter(this);
-					}
-				}
-			}
 		}
 
-		[Obsolete("Replace with calls to OnLeave and OnEnter surrounding component invalidation.", true)]
 		public virtual void RefreshComponents()
 		{
-			if (Parent == null)
-			{
-				Map facet = Map;
+			if ( Parent != null )
+				return;
 
-				if (facet != null)
-				{
-					facet.OnLeave(this);
-					facet.OnEnter(this);
-				}
+			Map map = Map;
+
+			if ( map != null )
+			{
+				map.OnLeave( this );
+				map.OnEnter( this );
 			}
 		}
 
-        public override int LabelNumber
+		public override int LabelNumber
 		{
 			get
 			{
-				MultiComponentList mcl = Components;
+				MultiComponentList mcl = this.Components;
 
-				if (mcl.List.Length > 0)
-				{
-					int id = mcl.List[0].m_ItemID;
-
-					if (id < 0x4000)
-					{
-						return 1020000 + id;
-					}
-					else
-					{
-						return 1078872 + id;
-					}
-				}
+				if ( mcl.List.Length > 0 )
+					return 1020000 + (mcl.List[0].m_ItemID & 0x3FFF);
 
 				return base.LabelNumber;
 			}
 		}
 
-		public virtual bool AllowsRelativeDrop { get { return false; } }
-
-        // Removed as it will use update range
-		/*public override int GetMaxUpdateRange()
+		public override int GetMaxUpdateRange()
 		{
-            return base.GetMaxUpdateRange() + 4;
+			return 22;
 		}
 
-		public override int GetUpdateRange(Mobile m)
+		public override int GetUpdateRange( Mobile m )
 		{
-            return base.GetUpdateRange(m) + 4;
-		}*/
-
-		public virtual MultiComponentList Components { get { return MultiData.GetComponents(ItemID); } }
-
-		public virtual bool Contains(Point2D p)
-		{
-			return Contains(p.m_X, p.m_Y);
+			return 22;
 		}
 
-		public virtual bool Contains(Point3D p)
+		public virtual MultiComponentList Components
 		{
-			return Contains(p.m_X, p.m_Y);
-		}
-
-		public virtual bool Contains(IPoint3D p)
-		{
-			return Contains(p.X, p.Y);
-		}
-
-		public virtual bool Contains(int x, int y)
-		{
-			MultiComponentList mcl = Components;
-
-			x -= X + mcl.Min.m_X;
-			y -= Y + mcl.Min.m_Y;
-
-			return x >= 0 && x < mcl.Width && y >= 0 && y < mcl.Height && mcl.Tiles[x][y].Length > 0;
-		}
-
-		public bool Contains(Mobile m)
-		{
-			if (m.Map == Map)
+			get
 			{
-				return Contains(m.X, m.Y);
+				return MultiData.GetComponents( ItemID );
 			}
+		}
+
+		public virtual bool Contains( Point2D p )
+		{
+			return Contains( p.m_X, p.m_Y );
+		}
+
+		public virtual bool Contains( Point3D p )
+		{
+			return Contains( p.m_X, p.m_Y );
+		}
+
+		public virtual bool Contains( IPoint3D p )
+		{
+			return Contains( p.X, p.Y );
+		}
+
+		public virtual bool Contains( int x, int y )
+		{
+			MultiComponentList mcl = this.Components;
+
+			x -= this.X + mcl.Min.m_X;
+			y -= this.Y + mcl.Min.m_Y;
+
+			return x >= 0
+				&& x < mcl.Width
+				&& y >= 0
+				&& y < mcl.Height
+				&& mcl.Tiles[x][y].Length > 0;
+		}
+
+		public bool Contains( Mobile m )
+		{
+			if ( m.Map == this.Map )
+				return Contains( m.X, m.Y );
 			else
-			{
 				return false;
-			}
 		}
 
-		public bool Contains(Item item)
+		public bool Contains( Item item )
 		{
-			if (item.Map == Map)
-			{
-				return Contains(item.X, item.Y);
-			}
+			if ( item.Map == this.Map )
+				return Contains( item.X, item.Y );
 			else
-			{
 				return false;
-			}
 		}
 
-		public override void Serialize(GenericWriter writer)
+		public override void Serialize( GenericWriter writer )
 		{
-			base.Serialize(writer);
+			base.Serialize( writer );
 
-			writer.Write(1); // version
+			writer.Write( (int) 0 ); // version
 		}
 
-		public override void Deserialize(GenericReader reader)
+		public override void Deserialize( GenericReader reader )
 		{
-			base.Deserialize(reader);
+			base.Deserialize( reader );
 
 			int version = reader.ReadInt();
-
-			if (version == 0)
-			{
-				if (ItemID >= 0x4000)
-				{
-					ItemID -= 0x4000;
-				}
-			}
 		}
 	}
 }
