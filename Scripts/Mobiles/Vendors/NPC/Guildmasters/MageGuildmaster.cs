@@ -4,22 +4,20 @@ using Server;
 
 namespace Server.Mobiles
 {
-	public class Alchemist : BaseVendor
+	public class MageGuildmaster : BaseGuildmaster
 	{
-		private ArrayList m_SBInfos = new ArrayList();
-		protected override ArrayList SBInfos{ get { return m_SBInfos; } }
-
 		public override NpcGuild NpcGuild{ get{ return NpcGuild.MagesGuild; } }
 
-		public Alchemist() : base( "the alchemist" )
+		[Constructable]
+		public MageGuildmaster() : base( "mage" )
 		{
-			SetSkill( SkillName.Alchemy, 85.0, 100.0 );
-			SetSkill( SkillName.HerbalLore, 65.0, 88.0 );
-		}
-
-		public override void InitSBInfo()
-		{
-			m_SBInfos.Add( new SBAlchemist() );
+			SetSkill( SkillName.Invocation, 85.0, 100.0 );
+			SetSkill( SkillName.Inscribe, 65.0, 88.0 );
+			SetSkill( SkillName.MagicResist, 64.0, 100.0 );
+			SetSkill( SkillName.Magery, 90.0, 100.0 );
+			SetSkill( SkillName.UnarmedFighting, 60.0, 83.0 );
+			SetSkill( SkillName.Meditation, 85.0, 100.0 );
+			SetSkill( SkillName.Macing, 36.0, 68.0 );
 		}
 
 		public override VendorShoeType ShoeType
@@ -31,10 +29,11 @@ namespace Server.Mobiles
 		{
 			base.InitOutfit();
 
-			AddItem( new Server.Items.Robe( Utility.RandomPinkHue() ) );
+			AddItem( new Server.Items.Robe( Utility.RandomBlueHue() ) );
+			AddItem( new Server.Items.GnarledStaff() );
 		}
 
-		public Alchemist( Serial serial ) : base( serial )
+		public MageGuildmaster( Serial serial ) : base( serial )
 		{
 		}
 

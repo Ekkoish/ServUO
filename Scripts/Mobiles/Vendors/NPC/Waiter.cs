@@ -4,37 +4,30 @@ using Server;
 
 namespace Server.Mobiles
 {
-	public class Alchemist : BaseVendor
+	public class Waiter : BaseVendor
 	{
 		private ArrayList m_SBInfos = new ArrayList();
 		protected override ArrayList SBInfos{ get { return m_SBInfos; } }
 
-		public override NpcGuild NpcGuild{ get{ return NpcGuild.MagesGuild; } }
-
-		public Alchemist() : base( "the alchemist" )
+		[Constructable]
+		public Waiter() : base( "the waiter" )
 		{
-			SetSkill( SkillName.Alchemy, 85.0, 100.0 );
-			SetSkill( SkillName.HerbalLore, 65.0, 88.0 );
+			SetSkill( SkillName.Throwing, 36.0, 68.0 );
 		}
 
 		public override void InitSBInfo()
 		{
-			m_SBInfos.Add( new SBAlchemist() );
-		}
-
-		public override VendorShoeType ShoeType
-		{
-			get{ return Utility.RandomBool() ? VendorShoeType.Shoes : VendorShoeType.Sandals; }
+			m_SBInfos.Add( new SBWaiter() );
 		}
 
 		public override void InitOutfit()
 		{
 			base.InitOutfit();
 
-			AddItem( new Server.Items.Robe( Utility.RandomPinkHue() ) );
+			AddItem( new Server.Items.HalfApron() );
 		}
 
-		public Alchemist( Serial serial ) : base( serial )
+		public Waiter( Serial serial ) : base( serial )
 		{
 		}
 
