@@ -5,7 +5,7 @@
  *   copyright            : (C) The RunUO Software Team
  *   email                : info@runuo.com
  *
- *   $Id$
+ *   $Id: GumpTooltip.cs 4 2006-06-15 04:28:39Z mark $
  *
  ***************************************************************************/
 
@@ -26,20 +26,13 @@ namespace Server.Gumps
 	public class GumpTooltip : GumpEntry
 	{
 		private int m_Number;
-        private string m_Args;
 
-        public GumpTooltip( int number )
+		public GumpTooltip( int number )
 		{
 			m_Number = number;
 		}
 
-        public GumpTooltip(int number, string args)
-        {
-            m_Number = number;
-            m_Args = args;
-        }
-
-        public int Number
+		public int Number
 		{
 			get
 			{
@@ -51,29 +44,10 @@ namespace Server.Gumps
 			}
 		}
 
-        public string Args
-        {
-            get
-            {
-                return m_Args;
-            }
-            set
-            {
-                Delta(ref m_Args, value);
-            }
-        }
-
-        public override string Compile()
+		public override string Compile()
 		{
-            if (string.IsNullOrEmpty(m_Args))
-            {
-                return string.Format("{{ tooltip {0} }}", m_Number);
-            }
-            else
-            {
-                return string.Format("{{ tooltip {0} @{1}@ }}", m_Number, m_Args);
-            }
-        }
+			return String.Format( "{{ tooltip {0} }}", m_Number );
+		}
 
 		private static byte[] m_LayoutName = Gump.StringToBuffer( "tooltip" );
 
@@ -81,11 +55,6 @@ namespace Server.Gumps
 		{
 			disp.AppendLayout( m_LayoutName );
 			disp.AppendLayout( m_Number );
-
-            if (!string.IsNullOrEmpty(m_Args))
-            {
-                disp.AppendLayout(m_Args);
-            }
-        }
+		}
 	}
 }

@@ -5,7 +5,7 @@
  *   copyright            : (C) The RunUO Software Team
  *   email                : info@runuo.com
  *
- *   $Id$
+ *   $Id: GumpImageTileButton.cs 4 2006-06-15 04:28:39Z mark $
  *
  ***************************************************************************/
 
@@ -42,7 +42,6 @@ namespace Server.Gumps
 		public GumpImageTileButton( int x, int y, int normalID, int pressedID, int buttonID, GumpButtonType type, int param, int itemID, int hue, int width, int height ) : this(x, y, normalID, pressedID, buttonID, type, param, itemID, hue, width, height, -1 )
 		{
 		}
-
 		public GumpImageTileButton( int x, int y, int normalID, int pressedID, int buttonID, GumpButtonType type, int param, int itemID, int hue, int width, int height, int localizedTooltip )
 		{
 			m_X = x;
