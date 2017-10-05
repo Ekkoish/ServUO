@@ -1,29 +1,40 @@
-#region Header
-// **********
-// ServUO - AssemblyInfo.cs
-// **********
-#endregion
+/***************************************************************************
+ *                              AssemblyInfo.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: AssemblyInfo.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System.Reflection;
-using System.Resources;
-using System.Runtime.InteropServices;
-#endregion
+using System.Runtime.CompilerServices;
 
 //
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 //
-
-[assembly: AssemblyTitle("ServUO Server")]
-[assembly: AssemblyDescription("Ultima Online Server Emulator")]
+[assembly: AssemblyTitle("RunUO Server Core")]	//Having just RunUO there is reundant, ie, RunUO.exe with the word 'RunUO' under it
+[assembly: AssemblyDescription("UO Server Software")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("The ServUO Team")]
+[assembly: AssemblyCompany("The RunUO Team")]
 [assembly: AssemblyProduct("")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
+[assembly: AssemblyCulture("")]		
+
 //
 // Version information for an assembly consists of the following four values:
 //
@@ -35,7 +46,8 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("0.5.*")]
+[assembly: AssemblyVersion("2.0.*")]
+
 //
 // In order to sign your assembly you must specify a key to use. Refer to the 
 // Microsoft .NET Framework documentation for more information on assembly signing.
@@ -61,9 +73,6 @@ using System.Runtime.InteropServices;
 //   (*) Delay Signing is an advanced option - see the Microsoft .NET Framework
 //       documentation for more information on this.
 //
-
 [assembly: AssemblyDelaySign(false)]
 [assembly: AssemblyKeyFile("")]
 [assembly: AssemblyKeyName("")]
-[assembly: ComVisible(false)]
-[assembly: NeutralResourcesLanguage("en")]

@@ -1,0 +1,73 @@
+Priority: EveryTick
+
+Type: Server.TimeSystem.Engine+TimeSystemTimer; Count: 1; Percent: 33%
+Type: Server.TimeSystem.Engine+LightsEngineTimer; Count: 1; Percent: 33%
+Type: Server.TimeSystem.Engine+MobileObjectQueueTimer; Count: 1; Percent: 33%
+
+
+Priority: TenMS
+
+
+
+Priority: TwentyFiveMS
+
+
+
+Priority: FiftyMS
+
+Type: Server.Mobiles.BaseAI+AITimer; Count: 161; Percent: 100%
+
+
+Priority: TwoFiftyMS
+
+Type: DelayCallTimer[Server.Mobiles.XmlSpawner.OnTick]; Count: 13; Percent: 81%
+Type: Server.Engines.XmlSpawner2.AutoCombatBrain+AutoCombatBrainTimer; Count: 3; Percent: 18%
+
+
+Priority: OneSecond
+
+Type: Server.Mobiles.XmlSpawner+SpawnerTimer; Count: 1097; Percent: 84%
+Type: Server.Mobiles.XmlSpawner+InternalTimer; Count: 160; Percent: 12%
+Type: Server.Items.BaseDoor+InternalTimer; Count: 3; Percent: 0%
+Type: Server.Mobiles.XmlSpawner+GlobalSectorTimer; Count: 1; Percent: 0%
+Type: DelayCallTimer[Server.Misc.Weather.OnTick]; Count: 36; Percent: 2%
+Type: DelayCallTimer[Server.Engines.Reports.Reports.CheckRegenerate]; Count: 1; Percent: 0%
+Type: DelayCallTimer[Server.Factions.Faction.ProcessTick]; Count: 1; Percent: 0%
+Type: Server.Mobile+LogoutTimer; Count: 1; Percent: 0%
+Type: DelayCallTimer[Server.Items.Statues.UpdateStatues]; Count: 1; Percent: 0%
+
+
+Priority: FiveSeconds
+
+Type: DelayCallTimer[Server.Admin.AdminNetwork.CleanUp]; Count: 1; Percent: 0%
+Type: DelayCallTimer[Server.Multis.BaseHouse.Decay_OnTick]; Count: 1; Percent: 0%
+Type: Server.Mobiles.XmlSpawner+SpawnerTimer; Count: 331; Percent: 86%
+Type: DelayCallTimer[Server.Items.FillableContainer.Respawn]; Count: 5; Percent: 1%
+Type: Server.Guilds.WarTimer; Count: 1; Percent: 0%
+Type: Server.Misc.AutoRestart; Count: 1; Percent: 0%
+Type: Server.Misc.StatusPage; Count: 1; Percent: 0%
+Type: Server.Mobiles.LoyaltyTimer; Count: 1; Percent: 0%
+Type: DelayCallTimer[Server.Factions.Election.Slice]; Count: 4; Percent: 1%
+Type: DelayCallTimer[Server.Factions.Town.CheckIncome]; Count: 8; Percent: 2%
+Type: DelayCallTimer[Server.Items.CustomGuildStone.CheckForPayment]; Count: 1; Percent: 0%
+Type: DelayCallTimer[Server.Network.NetState.CheckAllAlive]; Count: 1; Percent: 0%
+Type: DelayCallTimer[Knives.TownHouses.TownHouseSign.RentDue]; Count: 25; Percent: 6%
+Type: Server.Items.Corpse+InternalTimer; Count: 3; Percent: 0%
+
+
+Priority: OneMinute
+
+Type: Server.Mobiles.WarHorseAttackTimer; Count: 6; Percent: 5%
+Type: Server.Mobiles.PlayerVendor+PayTimer; Count: 10; Percent: 9%
+Type: Server.Mobiles.EmployeeGatherTimer; Count: 4; Percent: 3%
+Type: Server.Mobiles.Mercenary+PayTimer; Count: 8; Percent: 7%
+Type: Server.Items.PlantTimer; Count: 1; Percent: 0%
+Type: Server.Items.CommunityBeeHiveTimer; Count: 11; Percent: 10%
+Type: Server.Items.ResourceTimer; Count: 20; Percent: 18%
+Type: Server.Engines.XmlSpawner2.AddictionTimer; Count: 30; Percent: 28%
+Type: Server.Engines.XmlSpawner2.DiseaseTimer; Count: 12; Percent: 11%
+Type: Server.Engines.XmlSpawner2.InjuryTimer; Count: 3; Percent: 2%
+Type: Server.Misc.FoodDecayTimer; Count: 1; Percent: 0%
+Type: Server.Misc.AutoSave; Count: 1; Percent: 0%
+
+

@@ -1,90 +1,114 @@
-#region Header
-// **********
-// ServUO - IEntity.cs
-// **********
-#endregion
+/***************************************************************************
+ *                                IEntity.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: IEntity.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
-#endregion
 
 namespace Server
 {
 	public interface IEntity : IPoint3D, IComparable, IComparable<IEntity>
 	{
-		Serial Serial { get; }
-        Point3D Location { get; set; }
-		Map Map { get; }
-
-		bool Deleted { get; }
-        bool NoMoveHS { get; set; }
-
-		void Delete();
-		void ProcessDelta();
+		Serial Serial{ get; }
+		Point3D Location{ get; }
+		Map Map{ get; }
 	}
 
-	public class Entity : IEntity, IComparable<Entity>
+	public class Entity : IEntity, IComparable, IComparable<Entity>, IComparable<IEntity>
 	{
-		public int CompareTo(IEntity other)
+		public int CompareTo( IEntity other )
 		{
-			if (other == null)
-			{
+			if ( other == null )
 				return -1;
-			}
 
-			return m_Serial.CompareTo(other.Serial);
+			return m_Serial.CompareTo( other.Serial );
 		}
 
-		public int CompareTo(Entity other)
+		public int CompareTo( Entity other )
 		{
-			return CompareTo((IEntity)other);
+			return this.CompareTo( (IEntity) other );
 		}
 
-		public int CompareTo(object other)
+		public int CompareTo( object other )
 		{
-			if (other == null || other is IEntity)
-			{
-				return CompareTo((IEntity)other);
-			}
+			if ( other == null || other is IEntity )
+				return this.CompareTo( (IEntity) other );
 
 			throw new ArgumentException();
 		}
 
 		private Serial m_Serial;
 		private Point3D m_Location;
-		private readonly Map m_Map;
+		private Map m_Map;
 
-		private bool m_Deleted;
-
-		public Entity(Serial serial, Point3D loc, Map map)
+		public Entity( Serial serial, Point3D loc, Map map )
 		{
 			m_Serial = serial;
 			m_Location = loc;
 			m_Map = map;
 		}
 
-		public Serial Serial { get { return m_Serial; } }
-
-        public Point3D Location { get { return m_Location; } set { } }
-
-		public int X { get { return m_Location.X; } }
-
-		public int Y { get { return m_Location.Y; } }
-
-		public int Z { get { return m_Location.Z; } }
-
-		public Map Map { get { return m_Map; } }
-
-		public bool Deleted { get { return m_Deleted; } }
-
-        public bool NoMoveHS { get; set; }
-
-		public void Delete()
+		public Serial Serial
 		{
-			m_Deleted = true;
+			get
+			{
+				return m_Serial;
+			}
 		}
 
-		public void ProcessDelta()
-		{ }
+		public Point3D Location
+		{
+			get
+			{
+				return m_Location;
+			}
+		}
+
+		public int X
+		{
+			get
+			{
+				return m_Location.X;
+			}
+		}
+
+		public int Y
+		{
+			get
+			{
+				return m_Location.Y;
+			}
+		}
+
+		public int Z
+		{
+			get
+			{
+				return m_Location.Z;
+			}
+		}
+
+		public Map Map
+		{
+			get
+			{
+				return m_Map;
+			}
+		}
 	}
 }

@@ -1,65 +1,55 @@
-#region Header
-// **********
-// ServUO - Prompt.cs
-// **********
-#endregion
+/***************************************************************************
+ *                                 Prompt.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: Prompt.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
+
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
 
 using System;
+using Server.Network;
 
 namespace Server.Prompts
 {
 	public abstract class Prompt
 	{
-        private IEntity m_Sender;
-        private String m_MessageArgs;
+		private int m_Serial;
+		private static int m_Serials;
 
-        public IEntity Sender
-        {
-            get { return m_Sender; }
+		public int Serial
+		{
+			get
+			{
+				return m_Serial;
+			}
+		}
+
+		public Prompt()
+		{
+			do
+			{
+				m_Serial = ++m_Serials;
+			} while ( m_Serial == 0 );
+		}
+
+		public virtual void OnCancel( Mobile from )
+		{
         }
 
-        public String MessageArgs
-        {
-            get { return m_MessageArgs; }
-        }
-
-        public virtual int MessageCliloc
-        {
-            get { return 1042971; } // ~1_NOTHING~
-        }
-
-        public virtual int MessageHue
-        {
-            get { return 0; }
-        }
-
-        public virtual int TypeId
-        {
-            get { return GetType().FullName.GetHashCode(); }
-        }
-
-        public Prompt()
-            : this(null)
-        {
-        }
-
-        public Prompt(IEntity sender)
-            : this(sender, String.Empty)
-        {
-        }
-
-        public Prompt(IEntity sender, String args)
-        {
-            m_Sender = sender;
-            m_MessageArgs = args;
-        }
-
-        public virtual void OnCancel(Mobile from)
-        {
-        }
-
-        public virtual void OnResponse(Mobile from, string text)
-        {
-        }
-    }
+		public virtual void OnResponse( Mobile from, string text )
+		{
+		}
+	}
 }

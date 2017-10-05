@@ -1,88 +1,127 @@
-#region Header
-// **********
-// ServUO - Commands.cs
-// **********
-#endregion
+/***************************************************************************
+ *                                Commands.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: Commands.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
+using System.Collections;
 using System.Collections.Generic;
-
+using System.IO;
+using Server.Guilds;
+using Server.Gumps;
+using Server.Menus;
+using Server.Menus.ItemLists;
+using Server.Menus.Questions;
 using Server.Network;
-#endregion
+using Server.Items;
+using Server.Targeting;
 
 namespace Server.Commands
 {
-	public delegate void CommandEventHandler(CommandEventArgs e);
+	public delegate void CommandEventHandler( CommandEventArgs e );
 
 	public class CommandEventArgs : EventArgs
 	{
-		private readonly Mobile m_Mobile;
-		private readonly string m_Command;
-		private readonly string m_ArgString;
-		private readonly string[] m_Arguments;
+		private Mobile m_Mobile;
+		private string m_Command, m_ArgString;
+		private string[] m_Arguments;
 
-		public Mobile Mobile { get { return m_Mobile; } }
-
-		public string Command { get { return m_Command; } }
-
-		public string ArgString { get { return m_ArgString; } }
-
-		public string[] Arguments { get { return m_Arguments; } }
-
-		public int Length { get { return m_Arguments.Length; } }
-
-		public string GetString(int index)
+		public Mobile Mobile
 		{
-			if (index < 0 || index >= m_Arguments.Length)
+			get
 			{
-				return "";
+				return m_Mobile;
 			}
+		}
+
+		public string Command
+		{
+			get
+			{
+				return m_Command;
+			}
+		}
+
+		public string ArgString
+		{
+			get
+			{
+				return m_ArgString;
+			}
+		}
+
+		public string[] Arguments
+		{
+			get
+			{
+				return m_Arguments;
+			}
+		}
+
+		public int Length
+		{
+			get
+			{
+				return m_Arguments.Length;
+			}
+		}
+
+		public string GetString( int index )
+		{
+			if ( index < 0 || index >= m_Arguments.Length )
+				return "";
 
 			return m_Arguments[index];
 		}
 
-		public int GetInt32(int index)
+		public int GetInt32( int index )
 		{
-			if (index < 0 || index >= m_Arguments.Length)
-			{
+			if ( index < 0 || index >= m_Arguments.Length )
 				return 0;
-			}
 
-			return Utility.ToInt32(m_Arguments[index]);
+			return Utility.ToInt32( m_Arguments[index] );
 		}
 
-		public bool GetBoolean(int index)
+		public bool GetBoolean( int index )
 		{
-			if (index < 0 || index >= m_Arguments.Length)
-			{
+			if ( index < 0 || index >= m_Arguments.Length )
 				return false;
-			}
 
-			return Utility.ToBoolean(m_Arguments[index]);
+			return Utility.ToBoolean( m_Arguments[index] );
 		}
 
-		public double GetDouble(int index)
+		public double GetDouble( int index )
 		{
-			if (index < 0 || index >= m_Arguments.Length)
-			{
+			if ( index < 0 || index >= m_Arguments.Length )
 				return 0.0;
-			}
 
-			return Utility.ToDouble(m_Arguments[index]);
+			return Utility.ToDouble( m_Arguments[index] );
 		}
 
-		public TimeSpan GetTimeSpan(int index)
+		public TimeSpan GetTimeSpan( int index )
 		{
-			if (index < 0 || index >= m_Arguments.Length)
-			{
+			if ( index < 0 || index >= m_Arguments.Length )
 				return TimeSpan.Zero;
-			}
 
-			return Utility.ToTimeSpan(m_Arguments[index]);
+			return Utility.ToTimeSpan( m_Arguments[index] );
 		}
 
-		public CommandEventArgs(Mobile mobile, string command, string argString, string[] arguments)
+		public CommandEventArgs( Mobile mobile, string command, string argString, string[] arguments )
 		{
 			m_Mobile = mobile;
 			m_Command = command;
@@ -93,100 +132,114 @@ namespace Server.Commands
 
 	public class CommandEntry : IComparable
 	{
-		private readonly string m_Command;
-		private readonly CommandEventHandler m_Handler;
-		private readonly AccessLevel m_AccessLevel;
+		private string m_Command;
+		private CommandEventHandler m_Handler;
+		private AccessLevel m_AccessLevel;
 
-		public string Command { get { return m_Command; } }
+		public string Command
+		{
+			get
+			{
+				return m_Command;
+			}
+		}
 
-		public CommandEventHandler Handler { get { return m_Handler; } }
+		public CommandEventHandler Handler
+		{
+			get
+			{
+				return m_Handler;
+			}
+		}
 
-		public AccessLevel AccessLevel { get { return m_AccessLevel; } }
+		public AccessLevel AccessLevel
+		{
+			get
+			{
+				return m_AccessLevel;
+			}
+		}
 
-		public CommandEntry(string command, CommandEventHandler handler, AccessLevel accessLevel)
+		public CommandEntry( string command, CommandEventHandler handler, AccessLevel accessLevel )
 		{
 			m_Command = command;
 			m_Handler = handler;
 			m_AccessLevel = accessLevel;
 		}
 
-		public int CompareTo(object obj)
+		public int CompareTo( object obj )
 		{
-			if (obj == this)
-			{
+			if ( obj == this )
 				return 0;
-			}
-			else if (obj == null)
-			{
+			else if ( obj == null )
 				return 1;
-			}
 
 			CommandEntry e = obj as CommandEntry;
 
-			if (e == null)
-			{
+			if ( e == null )
 				throw new ArgumentException();
-			}
 
-			return m_Command.CompareTo(e.m_Command);
+			return m_Command.CompareTo( e.m_Command );
 		}
 	}
 
-	public static class CommandSystem
+	public class CommandSystem
 	{
-		private static string m_Prefix = "[";
+		private static string m_Prefix = ".";
 
-		public static string Prefix { get { return m_Prefix; } set { m_Prefix = value; } }
-
-		public static string[] Split(string value)
+		public static string Prefix
 		{
-			var array = value.ToCharArray();
-			var list = new List<string>();
+			get
+			{
+				return m_Prefix;
+			}
+			set
+			{
+				m_Prefix = value;
+			}
+		}
+
+		public static string[] Split( string value )
+		{
+			char[] array = value.ToCharArray();
+			List<string> list = new List<string>();
 
 			int start = 0, end = 0;
 
-			while (start < array.Length)
+			while ( start < array.Length )
 			{
 				char c = array[start];
 
-				if (c == '"')
+				if ( c == '"' )
 				{
 					++start;
 					end = start;
 
-					while (end < array.Length)
+					while ( end < array.Length )
 					{
-						if (array[end] != '"' || array[end - 1] == '\\')
-						{
+						if ( array[end] != '"' || array[end - 1] == '\\' )
 							++end;
-						}
 						else
-						{
 							break;
-						}
 					}
 
-					list.Add(value.Substring(start, end - start));
+					list.Add( value.Substring( start, end - start ) );
 
 					start = end + 2;
 				}
-				else if (c != ' ')
+				else if ( c != ' ' )
 				{
 					end = start;
 
-					while (end < array.Length)
+					while ( end < array.Length )
 					{
-						if (array[end] != ' ')
-						{
+						if ( array[end] != ' ' )
 							++end;
-						}
 						else
-						{
 							break;
-						}
 					}
 
-					list.Add(value.Substring(start, end - start));
+					list.Add( value.Substring( start, end - start ) );
 
 					start = end + 1;
 				}
@@ -199,50 +252,54 @@ namespace Server.Commands
 			return list.ToArray();
 		}
 
-		private static readonly Dictionary<string, CommandEntry> m_Entries;
+		private static Dictionary<string, CommandEntry> m_Entries;
 
-		public static Dictionary<string, CommandEntry> Entries { get { return m_Entries; } }
+		public static Dictionary<string, CommandEntry> Entries
+		{
+			get
+			{
+				return m_Entries;
+			}
+		}
 
 		static CommandSystem()
 		{
-			m_Entries = new Dictionary<string, CommandEntry>(StringComparer.OrdinalIgnoreCase);
+			m_Entries = new Dictionary<string, CommandEntry>( StringComparer.OrdinalIgnoreCase );
 		}
 
-		public static void Register(string command, AccessLevel access, CommandEventHandler handler)
+		public static void Register( string command, AccessLevel access, CommandEventHandler handler )
 		{
-			m_Entries[command] = new CommandEntry(command, handler, access);
+			m_Entries[command] = new CommandEntry( command, handler, access );
 		}
 
 		private static AccessLevel m_BadCommandIngoreLevel = AccessLevel.Player;
 
-		public static AccessLevel BadCommandIgnoreLevel { get { return m_BadCommandIngoreLevel; } set { m_BadCommandIngoreLevel = value; } }
+		public static AccessLevel BadCommandIgnoreLevel{ get{ return m_BadCommandIngoreLevel; } set{ m_BadCommandIngoreLevel = value; } }
 
-		public static bool Handle(Mobile from, string text)
+		public static bool Handle( Mobile from, string text )
 		{
-			return Handle(from, text, MessageType.Regular);
+			return Handle( from, text, MessageType.Regular );
 		}
 
-		public static bool Handle(Mobile from, string text, MessageType type)
+		public static bool Handle( Mobile from, string text, MessageType type )
 		{
-			if (text.StartsWith(m_Prefix) || type == MessageType.Command)
+			if ( text.StartsWith( m_Prefix ) || type == MessageType.Command )
 			{
-				if (type != MessageType.Command)
-				{
-					text = text.Substring(m_Prefix.Length);
-				}
+				if( type != MessageType.Command )
+					text = text.Substring( m_Prefix.Length );
 
-				int indexOf = text.IndexOf(' ');
+				int indexOf = text.IndexOf( ' ' );
 
 				string command;
 				string[] args;
 				string argString;
 
-				if (indexOf >= 0)
+				if ( indexOf >= 0 )
 				{
-					argString = text.Substring(indexOf + 1);
+					argString = text.Substring( indexOf + 1 );
 
-					command = text.Substring(0, indexOf);
-					args = Split(argString);
+					command = text.Substring( 0, indexOf );
+					args = Split( argString );
 				}
 				else
 				{
@@ -252,37 +309,33 @@ namespace Server.Commands
 				}
 
 				CommandEntry entry = null;
-				m_Entries.TryGetValue(command, out entry);
+				m_Entries.TryGetValue( command, out entry );
 
-				if (entry != null)
+				if ( entry != null )
 				{
-					if (from.AccessLevel >= entry.AccessLevel)
+					if ( from.AccessLevel >= entry.AccessLevel )
 					{
-						if (entry.Handler != null)
+						if ( entry.Handler != null )
 						{
-							CommandEventArgs e = new CommandEventArgs(from, command, argString, args);
-							entry.Handler(e);
-							EventSink.InvokeCommand(e);
+							CommandEventArgs e = new CommandEventArgs( from, command, argString, args );
+							entry.Handler( e );
+							EventSink.InvokeCommand( e );
 						}
 					}
 					else
 					{
-						if (from.AccessLevel <= m_BadCommandIngoreLevel)
-						{
-							return false;
-						}
+						//if ( from.AccessLevel <= m_BadCommandIngoreLevel )
+							//return false;
 
-						from.SendMessage("You do not have access to that command.");
+						from.SendMessage( "You do not have access to that command." );
 					}
 				}
 				else
 				{
-					if (from.AccessLevel <= m_BadCommandIngoreLevel)
-					{
-						return false;
-					}
+					//if ( from.AccessLevel <= m_BadCommandIngoreLevel )
+						//return false;
 
-					from.SendMessage("That is not a valid command.");
+					from.SendMessage( "That is not a valid command." );
 				}
 
 				return true;

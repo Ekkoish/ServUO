@@ -1,56 +1,67 @@
-#region Header
-// **********
-// ServUO - EventLog.cs
-// **********
-#endregion
+/***************************************************************************
+ *                                EventLog.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: EventLog.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
 using System.Diagnostics;
-
 using DiagELog = System.Diagnostics.EventLog;
-#endregion
 
 namespace Server
 {
-	public static class EventLog
+	public class EventLog
 	{
 		static EventLog()
 		{
-			if (!DiagELog.SourceExists("ServUO"))
+			if ( !DiagELog.SourceExists( "RunUO" ) )
 			{
-				DiagELog.CreateEventSource("ServUO", "Application");
+				DiagELog.CreateEventSource( "RunUO", "Application" );
 			}
 		}
 
-		public static void Error(int eventID, string text)
+		public static void Error( int eventID, string text )
 		{
-			DiagELog.WriteEntry("ServUO", text, EventLogEntryType.Error, eventID);
+			DiagELog.WriteEntry( "RunUO", text, EventLogEntryType.Error, eventID );
 		}
 
-		public static void Error(int eventID, string format, params object[] args)
+		public static void Error( int eventID, string format, params object[] args )
 		{
-			Error(eventID, String.Format(format, args));
+			Error( eventID, String.Format( format, args ) );
 		}
 
-		public static void Warning(int eventID, string text)
+		public static void Warning( int eventID, string text )
 		{
-			DiagELog.WriteEntry("ServUO", text, EventLogEntryType.Warning, eventID);
+			DiagELog.WriteEntry( "RunUO", text, EventLogEntryType.Warning, eventID );
 		}
 
-		public static void Warning(int eventID, string format, params object[] args)
+		public static void Warning( int eventID, string format, params object[] args )
 		{
-			Warning(eventID, String.Format(format, args));
+			Warning( eventID, String.Format( format, args ) );
 		}
 
-		public static void Inform(int eventID, string text)
+		public static void Inform( int eventID, string text )
 		{
-			DiagELog.WriteEntry("ServUO", text, EventLogEntryType.Information, eventID);
+			DiagELog.WriteEntry( "RunUO", text, EventLogEntryType.Information, eventID );
 		}
 
-		public static void Inform(int eventID, string format, params object[] args)
+		public static void Inform( int eventID, string format, params object[] args )
 		{
-			Inform(eventID, String.Format(format, args));
+			Inform( eventID, String.Format( format, args ) );
 		}
 	}
 }

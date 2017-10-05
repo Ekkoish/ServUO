@@ -1,42 +1,58 @@
-#region Header
-// **********
-// ServUO - ItemBounds.cs
-// **********
-#endregion
+/***************************************************************************
+ *                               ItemBounds.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: ItemBounds.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
 using System.IO;
-#endregion
 
 namespace Server
 {
-	public static class ItemBounds
+	public class ItemBounds
 	{
-		private static readonly Rectangle2D[] m_Bounds;
+		private static Rectangle2D[] m_Bounds;
 
-		public static Rectangle2D[] Table { get { return m_Bounds; } }
+		public static Rectangle2D[] Table
+		{
+			get
+			{
+				return m_Bounds;
+			}
+		}
 
 		static ItemBounds()
 		{
-			m_Bounds = new Rectangle2D[TileData.ItemTable.Length];
-
-			if (File.Exists("Data/Binary/Bounds.bin"))
+			if ( File.Exists( "Data/Binary/Bounds.bin" ) )
 			{
-				using (FileStream fs = new FileStream("Data/Binary/Bounds.bin", FileMode.Open, FileAccess.Read, FileShare.Read))
+				using ( FileStream fs = new FileStream( "Data/Binary/Bounds.bin", FileMode.Open, FileAccess.Read, FileShare.Read ) )
 				{
-					BinaryReader bin = new BinaryReader(fs);
+					BinaryReader bin = new BinaryReader( fs );
 
-					int count = Math.Min(m_Bounds.Length, (int)(fs.Length / 8));
+					m_Bounds = new Rectangle2D[0x4000];
 
-					for (int i = 0; i < count; ++i)
+					for ( int i = 0; i < 0x4000; ++i )
 					{
 						int xMin = bin.ReadInt16();
 						int yMin = bin.ReadInt16();
 						int xMax = bin.ReadInt16();
 						int yMax = bin.ReadInt16();
 
-						m_Bounds[i].Set(xMin, yMin, (xMax - xMin) + 1, (yMax - yMin) + 1);
+						m_Bounds[i].Set( xMin, yMin, (xMax - xMin) + 1, (yMax - yMin) + 1 );
 					}
 
 					bin.Close();
@@ -44,7 +60,9 @@ namespace Server
 			}
 			else
 			{
-				Console.WriteLine("Warning: Data/Binary/Bounds.bin does not exist");
+				Console.WriteLine( "Warning: Data/Binary/Bounds.bin does not exist" );
+
+				m_Bounds = new Rectangle2D[0x4000];
 			}
 		}
 	}

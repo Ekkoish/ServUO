@@ -1,139 +1,138 @@
-#region Header
-// **********
-// ServUO - Poison.cs
-// **********
-#endregion
+/***************************************************************************
+ *                                 Poison.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: Poison.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
-using System.Collections.Generic;
-#endregion
+using System.Collections;
 
 namespace Server
 {
 	[Parsable]
 	public abstract class Poison
 	{
-		#region Mondain's Legacy
-		public abstract int LabelNumber { get; }
-		public abstract int RealLevel { get; }
-		#endregion
-
 		/*public abstract TimeSpan Interval{ get; }
-        public abstract TimeSpan Duration{ get; }*/
-		public abstract string Name { get; }
-		public abstract int Level { get; }
-		public abstract Timer ConstructTimer(Mobile m);
+		public abstract TimeSpan Duration{ get; }*/
+		public abstract string Name{ get; }
+		public abstract int Level{ get; }
+		public abstract Timer ConstructTimer( Mobile m );
 		/*public abstract void OnDamage( Mobile m, ref object state );*/
 
 		public override string ToString()
 		{
-			return Name;
+			return this.Name;
 		}
 
-		private static readonly List<Poison> m_Poisons = new List<Poison>();
 
-		public static void Register(Poison reg)
+		private static ArrayList m_Poisons = new ArrayList();
+
+		public static void Register( Poison reg )
 		{
 			string regName = reg.Name.ToLower();
 
-			for (int i = 0; i < m_Poisons.Count; i++)
+			for(int i=0;i<m_Poisons.Count;i++)
 			{
-				if (reg.Level == m_Poisons[i].Level)
-				{
-					throw new Exception("A poison with that level already exists.");
-				}
-				else if (regName == m_Poisons[i].Name.ToLower())
-				{
-					throw new Exception("A poison with that name already exists.");
-				}
+				if ( reg.Level == ((Poison)m_Poisons[i]).Level )
+					throw new Exception( "A poison with that level already exists." );
+				else if ( regName == ((Poison)m_Poisons[i]).Name.ToLower() )
+					throw new Exception( "A poison with that name already exists." );
 			}
 
-			m_Poisons.Add(reg);
+			m_Poisons.Add( reg );
 		}
 
-		public static Poison Lesser { get { return GetPoison("Lesser"); } }
-		public static Poison Regular { get { return GetPoison("Regular"); } }
-		public static Poison Greater { get { return GetPoison("Greater"); } }
-		public static Poison Deadly { get { return GetPoison("Deadly"); } }
-		public static Poison Lethal { get { return GetPoison("Lethal"); } }
+		public static Poison Lesser{ get{ return GetPoison( "Lesser" ); } }
+		public static Poison Regular{ get{ return GetPoison( "Regular" ); } }
+		public static Poison Greater{ get{ return GetPoison( "Greater" ); } }
+		public static Poison Deadly{ get{ return GetPoison( "Deadly" ); } }
+		public static Poison Lethal{ get{ return GetPoison( "Lethal" ); } }
 
-		#region Mondain's Legacy
-		public static Poison Parasitic { get { return GetPoison("DeadlyParasitic"); } }
-		public static Poison DarkGlow { get { return GetPoison("GreaterDarkglow"); } }
-		#endregion
+		public static ArrayList Poisons
+		{
+			get
+			{
+				return m_Poisons;
+			}
+		}
 
-		public static List<Poison> Poisons { get { return m_Poisons; } }
-
-		public static Poison Parse(string value)
+		public static Poison Parse( string value )
 		{
 			Poison p = null;
 
-			int plevel;
-
-			if (int.TryParse(value, out plevel))
+			try
 			{
-				p = GetPoison(plevel);
+				p = GetPoison( Convert.ToInt32( value ) );
+			}
+			catch
+			{
 			}
 
-			if (p == null)
-			{
-				p = GetPoison(value);
-			}
+			if ( p == null )
+				p = GetPoison( value );
 
 			return p;
 		}
 
-		public static Poison GetPoison(int level)
+		public static Poison GetPoison( int level )
 		{
-			for (int i = 0; i < m_Poisons.Count; ++i)
+			for ( int i = 0; i < m_Poisons.Count; ++i )
 			{
-				Poison p = m_Poisons[i];
+				Poison p = (Poison)m_Poisons[i];
 
-				if (p.Level == level)
-				{
+				if ( p.Level == level )
 					return p;
-				}
 			}
 
 			return null;
 		}
 
-		public static Poison GetPoison(string name)
+		public static Poison GetPoison( string name )
 		{
-			for (int i = 0; i < m_Poisons.Count; ++i)
+			for ( int i = 0; i < m_Poisons.Count; ++i )
 			{
-				Poison p = m_Poisons[i];
+				Poison p = (Poison)m_Poisons[i];
 
-				if (Utility.InsensitiveCompare(p.Name, name) == 0)
-				{
+				if ( Utility.InsensitiveCompare( p.Name, name ) == 0 )
 					return p;
-				}
 			}
 
 			return null;
 		}
 
-		public static void Serialize(Poison p, GenericWriter writer)
+		public static void Serialize( Poison p, GenericWriter writer )
 		{
-			if (p == null)
+			if ( p == null )
 			{
-				writer.Write((byte)0);
+				writer.Write( (byte)0 );
 			}
 			else
 			{
-				writer.Write((byte)1);
-				writer.Write((byte)p.Level);
+				writer.Write( (byte)1 );
+				writer.Write( (byte)p.Level );
 			}
 		}
 
-		public static Poison Deserialize(GenericReader reader)
+		public static Poison Deserialize( GenericReader reader )
 		{
-			switch (reader.ReadByte())
+			switch ( reader.ReadByte() )
 			{
-				case 1:
-					return GetPoison(reader.ReadByte());
-				case 2:
+				case 1: return GetPoison( reader.ReadByte() );
+				case 2: 
 					//no longer used, safe to remove?
 					reader.ReadInt();
 					reader.ReadDouble();

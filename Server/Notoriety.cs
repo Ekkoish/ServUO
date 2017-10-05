@@ -1,14 +1,34 @@
-#region Header
-// **********
-// ServUO - Notoriety.cs
-// **********
-#endregion
+/***************************************************************************
+ *                               Notoriety.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: Notoriety.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
+
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
+using System;
+using System.Collections;
+using Server;
+using Server.Guilds;
+using Server.Items;
 
 namespace Server
 {
-	public delegate int NotorietyHandler(Mobile source, IDamageable target);
+	public delegate int NotorietyHandler( Mobile source, Mobile target );
 
-	public static class Notoriety
+	public class Notoriety
 	{
 		public const int Innocent = 1;
 		public const int Ally = 2;
@@ -20,25 +40,41 @@ namespace Server
 
 		private static NotorietyHandler m_Handler;
 
-		public static NotorietyHandler Handler { get { return m_Handler; } set { m_Handler = value; } }
-
-		private static int[] m_Hues = new[] {0x000, 0x059, 0x03F, 0x3B2, 0x3B2, 0x090, 0x022, 0x035};
-
-		public static int[] Hues { get { return m_Hues; } set { m_Hues = value; } }
-
-		public static int GetHue(int noto)
+		public static NotorietyHandler Handler
 		{
-			if (noto < 0 || noto >= m_Hues.Length)
+			get{ return m_Handler; }
+			set{ m_Handler = value; }
+		}
+
+		private static int[] m_Hues = new int[]
 			{
+				0x000,
+				0x059,
+				0x03F,
+				0x3B2,
+				0x3B2,
+				0x090,
+				0x022,
+				0x035
+			};
+
+		public static int[] Hues
+		{
+			get{ return m_Hues; }
+			set{ m_Hues = value; }
+		}
+
+		public static int GetHue( int noto )
+		{
+			if ( noto < 0 || noto >= m_Hues.Length )
 				return 0;
-			}
 
 			return m_Hues[noto];
 		}
 
-        public static int Compute(Mobile source, IDamageable target)
+		public static int Compute( Mobile source, Mobile target )
 		{
-			return m_Handler == null ? CanBeAttacked : m_Handler(source, target);
+			return m_Handler == null ? CanBeAttacked : m_Handler( source, target );
 		}
 	}
 }

@@ -1,119 +1,86 @@
-#region Header
-// **********
-// ServUO - QuestArrow.cs
-// **********
-#endregion
+/***************************************************************************
+ *                               QuestArrow.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: QuestArrow.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
+using System;
+using Server;
 using Server.Network;
-#endregion
 
 namespace Server
 {
 	public class QuestArrow
 	{
-		private readonly Mobile m_Mobile;
-		private readonly IPoint3D m_Target;
+		private Mobile m_Mobile;
 		private bool m_Running;
 
-		public Mobile Mobile { get { return m_Mobile; } }
-
-		public IPoint3D Target { get { return m_Target; } }
-
-		public bool Running { get { return m_Running; } }
-
-		public void Update()
+		public Mobile Mobile
 		{
-			Update(m_Target.X, m_Target.Y);
+			get
+			{
+				return m_Mobile;
+			}
 		}
 
-		public void Update(int x, int y)
+		public bool Running
 		{
-			if (!m_Running)
+			get
 			{
-				return;
+				return m_Running;
 			}
+		}
 
-			NetState ns = m_Mobile.NetState;
-
-			if (ns == null)
-			{
-				return;
-			}
-
-			if (ns.HighSeas)
-			{
-				if (m_Target is IEntity)
-				{
-					ns.Send(new SetArrowHS(x, y, ((IEntity)m_Target).Serial));
-				}
-				else
-				{
-					ns.Send(new SetArrowHS(x, y, Serial.MinusOne));
-				}
-			}
-			else
-			{
-				ns.Send(new SetArrow(x, y));
-			}
+		public void Update( int x, int y )
+		{
+			if ( m_Running )
+				m_Mobile.Send( new SetArrow( x, y ) );
 		}
 
 		public void Stop()
 		{
-			Stop(m_Target.X, m_Target.Y);
-		}
-
-		public void Stop(int x, int y)
-		{
-			if (!m_Running)
-			{
+			if ( !m_Running )
 				return;
-			}
 
 			m_Mobile.ClearQuestArrow();
 
-			NetState ns = m_Mobile.NetState;
-
-			if (ns != null)
-			{
-				if (ns.HighSeas)
-				{
-					if (m_Target is IEntity)
-					{
-						ns.Send(new CancelArrowHS(x, y, ((IEntity)m_Target).Serial));
-					}
-					else
-					{
-						ns.Send(new CancelArrowHS(x, y, Serial.MinusOne));
-					}
-				}
-				else
-				{
-					ns.Send(new CancelArrow());
-				}
-			}
-
+			m_Mobile.Send( new CancelArrow() );
 			m_Running = false;
+
 			OnStop();
 		}
 
 		public virtual void OnStop()
-		{ }
+		{
+		}
 
-		public virtual void OnClick(bool rightClick)
-		{ }
+		public virtual void OnClick( bool rightClick )
+		{
+		}
 
-		public QuestArrow(Mobile m, IPoint3D t)
+		public QuestArrow( Mobile m )
 		{
 			m_Running = true;
 			m_Mobile = m;
-			m_Target = t;
 		}
 
-		public QuestArrow(Mobile m, IPoint3D t, int x, int y)
-			: this(m, t)
+		public QuestArrow( Mobile m, int x, int y ) : this( m )
 		{
-			Update(x, y);
+			Update( x, y );
 		}
 	}
 }

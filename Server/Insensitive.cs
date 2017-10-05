@@ -1,71 +1,81 @@
-#region Header
-// **********
-// ServUO - Insensitive.cs
-// **********
-#endregion
+/***************************************************************************
+ *                               Insensitive.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: Insensitive.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
 
-#region References
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
+using System;
 using System.Collections;
-#endregion
 
 namespace Server
 {
-	public static class Insensitive
+	public class Insensitive
 	{
-		private static readonly IComparer m_Comparer = CaseInsensitiveComparer.Default;
+		private static IComparer m_Comparer = CaseInsensitiveComparer.Default;
 
-		public static IComparer Comparer { get { return m_Comparer; } }
-
-		public static int Compare(string a, string b)
+		public static IComparer Comparer
 		{
-			return m_Comparer.Compare(a, b);
+			get{ return m_Comparer; }
 		}
 
-		public static bool Equals(string a, string b)
+		private Insensitive()
 		{
-			if (a == null && b == null)
-			{
+		}
+
+		public static int Compare( string a, string b )
+		{
+			return m_Comparer.Compare( a, b );
+		}
+
+		public static bool Equals( string a, string b )
+		{
+			if ( a == null && b == null )
 				return true;
-			}
-			else if (a == null || b == null || a.Length != b.Length)
-			{
+			else if ( a == null || b == null || a.Length != b.Length )
 				return false;
-			}
 
-			return (m_Comparer.Compare(a, b) == 0);
+			return ( m_Comparer.Compare( a, b ) == 0 );
 		}
 
-		public static bool StartsWith(string a, string b)
+		public static bool StartsWith( string a, string b )
 		{
-			if (a == null || b == null || a.Length < b.Length)
-			{
+			if ( a == null || b == null || a.Length < b.Length )
 				return false;
-			}
 
-			return (m_Comparer.Compare(a.Substring(0, b.Length), b) == 0);
+			return ( m_Comparer.Compare( a.Substring( 0, b.Length ), b ) == 0 );
 		}
 
-		public static bool EndsWith(string a, string b)
+		public static bool EndsWith( string a, string b )
 		{
-			if (a == null || b == null || a.Length < b.Length)
-			{
+			if ( a == null || b == null || a.Length < b.Length )
 				return false;
-			}
 
-			return (m_Comparer.Compare(a.Substring(a.Length - b.Length), b) == 0);
+			return ( m_Comparer.Compare( a.Substring( a.Length - b.Length ), b ) == 0 );
 		}
 
-		public static bool Contains(string a, string b)
+		public static bool Contains( string a, string b )
 		{
-			if (a == null || b == null || a.Length < b.Length)
-			{
+			if ( a == null || b == null || a.Length < b.Length )
 				return false;
-			}
 
 			a = a.ToLower();
 			b = b.ToLower();
 
-			return (a.IndexOf(b) >= 0);
+			return ( a.IndexOf( b ) >= 0 );
 		}
 	}
 }
