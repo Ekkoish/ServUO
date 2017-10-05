@@ -1,54 +1,55 @@
 using System;
+using Server;
 using Server.Guilds;
 using Server.Prompts;
 
 namespace Server.Gumps
 {
-    public class GuildNamePrompt : Prompt
-    {
-        public override int MessageCliloc { get { return 1013060; } }
-        private readonly Mobile m_Mobile;
-        private readonly Guild m_Guild;
-        public GuildNamePrompt(Mobile m, Guild g)
-        {
-            this.m_Mobile = m;
-            this.m_Guild = g;
-        }
+	public class GuildNamePrompt : Prompt
+	{
+		private Mobile m_Mobile;
+		private Guild m_Guild;
 
-        public override void OnCancel(Mobile from)
-        {
-            if (GuildGump.BadLeader(this.m_Mobile, this.m_Guild))
-                return;
+		public GuildNamePrompt( Mobile m, Guild g )
+		{
+			m_Mobile = m;
+			m_Guild = g;
+		}
 
-            GuildGump.EnsureClosed(this.m_Mobile);
-            this.m_Mobile.SendGump(new GuildmasterGump(this.m_Mobile, this.m_Guild));
-        }
+		public override void OnCancel( Mobile from )
+		{
+			if ( GuildGump.BadLeader( m_Mobile, m_Guild ) )
+				return;
 
-        public override void OnResponse(Mobile from, string text)
-        {
-            if (GuildGump.BadLeader(this.m_Mobile, this.m_Guild))
-                return;
+			GuildGump.EnsureClosed( m_Mobile );
+			m_Mobile.SendGump( new GuildmasterGump( m_Mobile, m_Guild ) );
+		}
 
-            text = text.Trim();
+		public override void OnResponse( Mobile from, string text )
+		{
+			if ( GuildGump.BadLeader( m_Mobile, m_Guild ) )
+				return;
 
-            if (text.Length > 40)
-                text = text.Substring(0, 40);
+			text = text.Trim();
 
-            if (text.Length > 0)
-            {
-                if (Guild.FindByName(text) != null)
-                {
-                    this.m_Mobile.SendMessage("{0} conflicts with the name of an existing guild.", text);
-                }
-                else
-                {
-                    this.m_Guild.Name = text;
-                    this.m_Guild.GuildMessage(1018024, true, text); // The name of your guild has changed:
-                }
-            }
+			if ( text.Length > 40 )
+				text = text.Substring( 0, 40 );
 
-            GuildGump.EnsureClosed(this.m_Mobile);
-            this.m_Mobile.SendGump(new GuildmasterGump(this.m_Mobile, this.m_Guild));
-        }
-    }
+			if ( text.Length > 0 )
+			{
+				if ( Guild.FindByName( text ) != null )
+				{
+					m_Mobile.SendMessage( "{0} conflicts with the name of an existing guild.", text );
+				}
+				else
+				{
+					m_Guild.Name = text;
+					m_Guild.GuildMessage( 1018024, true, text ); // The name of your guild has changed:
+				}
+			}
+
+			GuildGump.EnsureClosed( m_Mobile );
+			m_Mobile.SendGump( new GuildmasterGump( m_Mobile, m_Guild ) );
+		}
+	}
 }

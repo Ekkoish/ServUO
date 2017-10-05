@@ -1,72 +1,73 @@
 using System;
+using System.Collections;
+using Server;
 using Server.Guilds;
 using Server.Network;
 
 namespace Server.Gumps
 {
-    public class GuildCharterGump : Gump
-    {
-        private const string DefaultWebsite = "https://www.servuo.com/";
-        private readonly Mobile m_Mobile;
-        private readonly Guild m_Guild;
-        public GuildCharterGump(Mobile from, Guild guild)
-            : base(20, 30)
-        {
-            this.m_Mobile = from;
-            this.m_Guild = guild;
+	public class GuildCharterGump : Gump
+	{
+		private Mobile m_Mobile;
+		private Guild m_Guild;
 
-            this.Dragable = false;
+		private const string DefaultWebsite = "http://www.runuo.com/";
 
-            this.AddPage(0);
-            this.AddBackground(0, 0, 550, 400, 5054);
-            this.AddBackground(10, 10, 530, 380, 3000);
+		public GuildCharterGump( Mobile from, Guild guild ) : base( 20, 30 )
+		{
+			m_Mobile = from;
+			m_Guild = guild;
 
-            this.AddButton(20, 360, 4005, 4007, 1, GumpButtonType.Reply, 0);
-            this.AddHtmlLocalized(55, 360, 300, 35, 1011120, false, false); // Return to the main menu.
+			Dragable = false;
 
-            string charter;
+			AddPage( 0 );
+			AddBackground( 0, 0, 550, 400, 5054 );
+			AddBackground( 10, 10, 530, 380, 3000 );
 
-            if ((charter = guild.Charter) == null || (charter = charter.Trim()).Length <= 0)
-                this.AddHtmlLocalized(20, 20, 400, 35, 1013032, false, false); // No charter has been defined.
-            else
-                this.AddHtml(20, 20, 510, 75, charter, true, true);
+			AddButton( 20, 360, 4005, 4007, 1, GumpButtonType.Reply, 0 );
+			AddHtmlLocalized( 55, 360, 300, 35, 1011120, false, false ); // Return to the main menu.
 
-            this.AddButton(20, 200, 4005, 4007, 2, GumpButtonType.Reply, 0);
-            this.AddHtmlLocalized(55, 200, 300, 20, 1011122, false, false); // Visit the guild website : 
+			string charter;
 
-            string website;
+			if ( (charter = guild.Charter) == null || (charter = charter.Trim()).Length <= 0 )
+				AddHtmlLocalized( 20, 20, 400, 35, 1013032, false, false ); // No charter has been defined.
+			else
+				AddHtml( 20, 20, 510, 75, charter, true, true );
 
-            if ((website = guild.Website) == null || (website = website.Trim()).Length <= 0)
-                website = DefaultWebsite;
+			AddButton( 20, 200, 4005, 4007, 2, GumpButtonType.Reply, 0 );
+			AddHtmlLocalized( 55, 200, 300, 20, 1011122, false, false ); // Visit the guild website : 
 
-            this.AddHtml(55, 220, 300, 20, website, false, false);
-        }
+			string website;
 
-        public override void OnResponse(NetState state, RelayInfo info)
-        {
-            if (GuildGump.BadMember(this.m_Mobile, this.m_Guild))
-                return;
+			if ( (website = guild.Website) == null || (website = website.Trim()).Length <= 0 )
+				website = DefaultWebsite;
 
-            switch ( info.ButtonID )
-            {
-                case 0:
-                    return; // Close
-                case 1:
-                    break; // Return to main menu
-                case 2:
-                    {
-                        string website;
+			AddHtml( 55, 220, 300, 20, website, false, false );
+		}
 
-                        if ((website = this.m_Guild.Website) == null || (website = website.Trim()).Length <= 0)
-                            website = DefaultWebsite;
+		public override void OnResponse( NetState state, RelayInfo info )
+		{
+			if ( GuildGump.BadMember( m_Mobile, m_Guild ) )
+				return;
 
-                        this.m_Mobile.LaunchBrowser(website);
-                        break;
-                    }
-            }
+			switch ( info.ButtonID )
+			{
+				case 0: return; // Close
+				case 1: break; // Return to main menu
+				case 2:
+				{
+					string website;
 
-            GuildGump.EnsureClosed(this.m_Mobile);
-            this.m_Mobile.SendGump(new GuildGump(this.m_Mobile, this.m_Guild));
-        }
-    }
+					if ( (website = m_Guild.Website) == null || (website = website.Trim()).Length <= 0 )
+						website = DefaultWebsite;
+
+					m_Mobile.LaunchBrowser( website );
+					break;
+				}
+			}
+
+			GuildGump.EnsureClosed( m_Mobile );
+			m_Mobile.SendGump( new GuildGump( m_Mobile, m_Guild ) );
+		}
+	}
 }

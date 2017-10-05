@@ -1,54 +1,54 @@
 using System;
+using Server;
 using Server.Guilds;
 using Server.Network;
 
 namespace Server.Gumps
 {
-    public class DeclareFealtyGump : GuildMobileListGump
-    {
-        public DeclareFealtyGump(Mobile from, Guild guild)
-            : base(from, guild, true, guild.Members)
-        {
-        }
+	public class DeclareFealtyGump : GuildMobileListGump
+	{
+		public DeclareFealtyGump( Mobile from, Guild guild ) : base( from, guild, true, guild.Members )
+		{
+		}
 
-        public override void OnResponse(NetState state, RelayInfo info)
-        {
-            if (GuildGump.BadMember(this.m_Mobile, this.m_Guild))
-                return;
+		protected override void Design()
+		{
+			AddHtmlLocalized( 20, 10, 400, 35, 1011097, false, false ); // Declare your fealty
 
-            if (info.ButtonID == 1)
-            {
-                int[] switches = info.Switches;
+			AddButton( 20, 400, 4005, 4007, 1, GumpButtonType.Reply, 0 );
+			AddHtmlLocalized( 55, 400, 250, 35, 1011098, false, false ); // I have selected my new lord.
 
-                if (switches.Length > 0)
-                {
-                    int index = switches[0];
+			AddButton( 300, 400, 4005, 4007, 0, GumpButtonType.Reply, 0 );
+			AddHtmlLocalized( 335, 400, 100, 35, 1011012, false, false ); // CANCEL
+		}
 
-                    if (index >= 0 && index < this.m_List.Count)
-                    {
-                        Mobile m = (Mobile)this.m_List[index];
+		public override void OnResponse( NetState state, RelayInfo info )
+		{
+			if ( GuildGump.BadMember( m_Mobile, m_Guild ) )
+				return;
 
-                        if (m != null && !m.Deleted)
-                        {
-                            state.Mobile.GuildFealty = m;
-                        }
-                    }
-                }
-            }
+			if ( info.ButtonID == 1 )
+			{
+				int[] switches = info.Switches;
 
-            GuildGump.EnsureClosed(this.m_Mobile);
-            this.m_Mobile.SendGump(new GuildGump(this.m_Mobile, this.m_Guild));
-        }
+				if ( switches.Length > 0 )
+				{
+					int index = switches[0];
 
-        protected override void Design()
-        {
-            this.AddHtmlLocalized(20, 10, 400, 35, 1011097, false, false); // Declare your fealty
+					if ( index >= 0 && index < m_List.Count )
+					{
+						Mobile m = (Mobile)m_List[index];
 
-            this.AddButton(20, 400, 4005, 4007, 1, GumpButtonType.Reply, 0);
-            this.AddHtmlLocalized(55, 400, 250, 35, 1011098, false, false); // I have selected my new lord.
+						if ( m != null && !m.Deleted )
+						{
+							state.Mobile.GuildFealty = m;
+						}
+					}
+				}
+			}
 
-            this.AddButton(300, 400, 4005, 4007, 0, GumpButtonType.Reply, 0);
-            this.AddHtmlLocalized(335, 400, 100, 35, 1011012, false, false); // CANCEL
-        }
-    }
+			GuildGump.EnsureClosed( m_Mobile );
+			m_Mobile.SendGump( new GuildGump( m_Mobile, m_Guild ) );
+		}
+	}
 }
