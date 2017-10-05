@@ -1,38 +1,27 @@
 using System;
-using Server.Commands.Generic;
+using Server;
 using Server.Targeting;
+using Server.Commands;
+using Server.Commands.Generic;
 
 namespace Server.Targets
 {
 	public class PickMoveTarget : Target
 	{
-		public PickMoveTarget()
-			: base(-1, false, TargetFlags.None)
+		public PickMoveTarget() : base( -1, false, TargetFlags.None )
 		{
 		}
 
-		protected override void OnTarget(Mobile from, object o)
+		protected override void OnTarget( Mobile from, object o )
 		{
-			if (!BaseCommand.IsAccessible(from, o))
+			if ( !BaseCommand.IsAccessible( from, o ) )
 			{
-				from.SendMessage("That is not accessible.");
+				from.SendMessage( "That is not accessible." );
 				return;
 			}
 
-			if (o is Item)
-			{
-				from.SendMessage("Where do you wish to move the item?");
-				from.Target = new MoveTarget(o);
-			}
-			else if (o is Mobile)
-			{
-				from.SendMessage("Where do you wish to move the mobile?");
-				from.Target = new MoveTarget(o);
-			}
-			else
-			{
-				from.SendMessage("Invalid Object.");
-			}
+			if ( o is Item || o is Mobile )
+				from.Target = new MoveTarget( o );
 		}
 	}
 }
