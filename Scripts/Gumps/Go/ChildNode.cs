@@ -1,60 +1,66 @@
 using System;
 using System.Xml;
+using Server;
 
 namespace Server.Gumps
 {
-    public class ChildNode
-    {
-        private readonly ParentNode m_Parent;
-        private string m_Name;
-        private Point3D m_Location;
-        public ChildNode(XmlTextReader xml, ParentNode parent)
-        {
-            this.m_Parent = parent;
+	public class ChildNode
+	{
+		private ParentNode m_Parent;
 
-            this.Parse(xml);
-        }
+		private string m_Name;
+		private Point3D m_Location;
 
-        public ParentNode Parent
-        {
-            get
-            {
-                return this.m_Parent;
-            }
-        }
-        public string Name
-        {
-            get
-            {
-                return this.m_Name;
-            }
-        }
-        public Point3D Location
-        {
-            get
-            {
-                return this.m_Location;
-            }
-        }
-        private void Parse(XmlTextReader xml)
-        {
-            if (xml.MoveToAttribute("name"))
-                this.m_Name = xml.Value;
-            else
-                this.m_Name = "empty";
+		public ChildNode( XmlTextReader xml, ParentNode parent )
+		{
+			m_Parent = parent;
 
-            int x = 0, y = 0, z = 0;
+			Parse( xml );
+		}
 
-            if (xml.MoveToAttribute("x"))
-                x = Utility.ToInt32(xml.Value);
+		private void Parse( XmlTextReader xml )
+		{
+			if ( xml.MoveToAttribute( "name" ) )
+				m_Name = xml.Value;
+			else
+				m_Name = "empty";
 
-            if (xml.MoveToAttribute("y"))
-                y = Utility.ToInt32(xml.Value);
+			int x = 0, y = 0, z = 0;
 
-            if (xml.MoveToAttribute("z"))
-                z = Utility.ToInt32(xml.Value);
+			if ( xml.MoveToAttribute( "x" ) )
+				x = Utility.ToInt32( xml.Value );
 
-            this.m_Location = new Point3D(x, y, z);
-        }
-    }
+			if ( xml.MoveToAttribute( "y" ) )
+				y = Utility.ToInt32( xml.Value );
+
+			if ( xml.MoveToAttribute( "z" ) )
+				z = Utility.ToInt32( xml.Value );
+
+			m_Location = new Point3D( x, y, z );
+		}
+
+		public ParentNode Parent
+		{
+			get
+			{
+				return m_Parent;
+			}
+		}
+
+		public string Name
+		{
+			get
+			{
+				return m_Name;
+			}
+		}
+
+		public Point3D Location
+		{
+			get
+			{
+				return m_Location;
+			}
+		}
+	}
 }

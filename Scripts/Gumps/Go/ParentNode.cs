@@ -1,76 +1,79 @@
 using System;
-using System.Collections;
 using System.Xml;
+using System.Collections;
+using Server;
 
 namespace Server.Gumps
 {
-    public class ParentNode
-    {
-        private readonly ParentNode m_Parent;
-        private object[] m_Children;
-        private string m_Name;
-        public ParentNode(XmlTextReader xml, ParentNode parent)
-        {
-            this.m_Parent = parent;
+	public class ParentNode
+	{
+		private ParentNode m_Parent;
+		private object[] m_Children;
 
-            this.Parse(xml);
-        }
+		private string m_Name;
 
-        public ParentNode Parent
-        {
-            get
-            {
-                return this.m_Parent;
-            }
-        }
-        public object[] Children
-        {
-            get
-            {
-                return this.m_Children;
-            }
-        }
-        public string Name
-        {
-            get
-            {
-                return this.m_Name;
-            }
-        }
-        private void Parse(XmlTextReader xml)
-        {
-            if (xml.MoveToAttribute("name"))
-                this.m_Name = xml.Value;
-            else
-                this.m_Name = "empty";
+		public ParentNode( XmlTextReader xml, ParentNode parent )
+		{
+			m_Parent = parent;
 
-            if (xml.IsEmptyElement)
-            {
-                this.m_Children = new object[0];
-            }
-            else
-            {
-                ArrayList children = new ArrayList();
+			Parse( xml );
+		}
 
-                while (xml.Read() && (xml.NodeType == XmlNodeType.Element || xml.NodeType == XmlNodeType.Comment))
-                {
-                    if (xml.NodeType == XmlNodeType.Comment)
-                        continue;
+		private void Parse( XmlTextReader xml )
+		{
+			if ( xml.MoveToAttribute( "name" ) )
+				m_Name = xml.Value;
+			else
+				m_Name = "empty";
 
-                    if (xml.Name == "child")
-                    {
-                        ChildNode n = new ChildNode(xml, this);
+			if ( xml.IsEmptyElement )
+			{
+				m_Children = new object[0];
+			}
+			else
+			{
+				ArrayList children = new ArrayList();
 
-                        children.Add(n);
-                    }
-                    else
-                    {
-                        children.Add(new ParentNode(xml, this));
-                    }
-                }
+				while ( xml.Read() && xml.NodeType == XmlNodeType.Element )
+				{
+					if ( xml.Name == "child" )
+					{
+						ChildNode n = new ChildNode( xml, this );
 
-                this.m_Children = children.ToArray();
-            }
-        }
-    }
+						children.Add( n );
+					}
+					else
+					{
+						children.Add( new ParentNode( xml, this ) );
+					}
+				}
+
+				m_Children = children.ToArray();
+			}
+		}
+
+		public ParentNode Parent
+		{
+			get
+			{
+				return m_Parent;
+			}
+		}
+
+		public object[] Children
+		{
+			get
+			{
+				return m_Children;
+			}
+		}
+
+		public string Name
+		{
+			get
+			{
+				return m_Name;
+			}
+		}
+	}
 }
