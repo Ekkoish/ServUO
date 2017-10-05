@@ -1,565 +1,59 @@
-#region Header
-// **********
-// ServUO - Properties.cs
-// **********
-#endregion
-
-#region References
 using System;
 using System.Reflection;
-
-using CustomsFramework;
-
+using System.Collections;
+using Server;
+using Server.Targeting;
+using Server.Items;
+using Server.Gumps;
+using CPA = Server.CommandPropertyAttribute;
 using Server.Commands;
 using Server.Commands.Generic;
-using Server.Gumps;
-using Server.Targeting;
-
-using CPA = Server.CommandPropertyAttribute;
-#endregion
 
 namespace Server.Commands
 {
-	[Flags]
 	public enum PropertyAccess
 	{
-		Read = 0x01,
-		Write = 0x02,
-		ReadWrite = Read | Write
+		Read		= 0x01,
+		Write		= 0x02,
+		ReadWrite	= Read | Write
 	}
 
 	public class Properties
 	{
-		private static readonly Type _TypeOfCPA = typeof(CPA);
-		private static readonly Type _TypeOfSerial = typeof(Serial);
-		private static readonly Type _TypeOfCustomSerial = typeof(CustomSerial);
-		private static readonly Type _TypeOfType = typeof(Type);
-		private static readonly Type _TypeOfChar = typeof(Char);
-		private static readonly Type _TypeOfString = typeof(String);
-		private static readonly Type _TypeOfIDynamicEnum = typeof(IDynamicEnum);
-		private static readonly Type _TypeOfText = typeof(TextDefinition);
-		private static readonly Type _TypeOfTimeSpan = typeof(TimeSpan);
-		private static readonly Type _TypeOfParsable = typeof(ParsableAttribute);
-
-		private static readonly Type[] _ParseTypes = new[] {typeof(string)};
-		private static readonly object[] _ParseParams = new object[1];
-
-		private static readonly Type[] _NumericTypes = new[]
+		public static void Register()
 		{
-			typeof(Byte), typeof(SByte), typeof(Int16), typeof(UInt16), typeof(Int32), typeof(UInt32), typeof(Int64),
-			typeof(UInt64)
-		};
-
-		public static void Initialize()
-		{
-			CommandSystem.Register("Props", AccessLevel.Counselor, Props_OnCommand);
+			CommandSystem.Register( "Props", AccessLevel.Counselor, new CommandEventHandler( Props_OnCommand ) );
 		}
 
-		public static CPA GetCPA(PropertyInfo p)
+		private class PropsTarget : Target
 		{
-			var attrs = p.GetCustomAttributes(_TypeOfCPA, false);
-
-			return attrs.Length == 0 ? null : attrs[0] as CPA;
-		}
-
-		public static PropertyInfo[] GetPropertyInfoChain(
-			Mobile m, Type type, string propertyString, PropertyAccess endAccess, ref string failReason)
-		{
-			var split = propertyString.Split('.');
-
-			if (split.Length == 0)
+			public PropsTarget() : base( -1, true, TargetFlags.None )
 			{
-				return null;
 			}
 
-			var info = new PropertyInfo[split.Length];
-
-			for (int i = 0; i < info.Length; ++i)
+			protected override void OnTarget( Mobile from, object o )
 			{
-				string propertyName = split[i];
-
-				if (CIEqual(propertyName, "current"))
-				{
-					continue;
-				}
-
-				var props = type.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
-
-				bool isFinal = i == info.Length - 1;
-
-				PropertyAccess access = endAccess;
-
-				if (!isFinal)
-				{
-					access |= PropertyAccess.Read;
-				}
-
-				foreach (PropertyInfo p in props)
-				{
-					if (!CIEqual(p.Name, propertyName))
-					{
-						continue;
-					}
-
-					CPA attr = GetCPA(p);
-
-					if (attr == null)
-					{
-						failReason = String.Format("Property '{0}' not found.", propertyName);
-						return null;
-					}
-
-					if ((access & PropertyAccess.Read) != 0 && m.AccessLevel < attr.ReadLevel)
-					{
-						failReason = String.Format(
-							"You must be at least {0} to get the property '{1}'.", Mobile.GetAccessLevelName(attr.ReadLevel), propertyName);
-
-						return null;
-					}
-
-					if ((access & PropertyAccess.Write) != 0 && m.AccessLevel < attr.WriteLevel)
-					{
-						failReason = String.Format(
-							"You must be at least {0} to set the property '{1}'.", Mobile.GetAccessLevelName(attr.WriteLevel), propertyName);
-
-						return null;
-					}
-
-					if ((access & PropertyAccess.Read) != 0 && !p.CanRead)
-					{
-						failReason = String.Format("Property '{0}' is write only.", propertyName);
-						return null;
-					}
-
-					if ((access & PropertyAccess.Write) != 0 && (!p.CanWrite || attr.ReadOnly) && isFinal)
-					{
-						failReason = String.Format("Property '{0}' is read only.", propertyName);
-						return null;
-					}
-
-					info[i] = p;
-					type = p.PropertyType;
-					break;
-				}
-
-				if (info[i] != null)
-				{
-					continue;
-				}
-
-				failReason = String.Format("Property '{0}' not found.", propertyName);
-				return null;
-			}
-
-			return info;
-		}
-
-		public static PropertyInfo GetPropertyInfo(
-			Mobile m, ref object obj, string propertyName, PropertyAccess access, ref string failReason)
-		{
-			var chain = GetPropertyInfoChain(m, obj.GetType(), propertyName, access, ref failReason);
-
-			return chain == null ? null : GetPropertyInfo(ref obj, chain, ref failReason);
-		}
-
-		public static PropertyInfo GetPropertyInfo(ref object obj, PropertyInfo[] chain, ref string failReason)
-		{
-			if (chain == null || chain.Length == 0)
-			{
-				failReason = "Property chain is empty.";
-				return null;
-			}
-
-			for (int i = 0; i < chain.Length - 1; ++i)
-			{
-				if (chain[i] == null)
-				{
-					continue;
-				}
-
-				obj = chain[i].GetValue(obj, null);
-
-				if (obj != null)
-				{
-					continue;
-				}
-
-				failReason = String.Format("Property '{0}' is null.", chain[i]);
-				return null;
-			}
-
-			return chain[chain.Length - 1];
-		}
-
-		public static string GetValue(Mobile from, object o, string name)
-		{
-			string failReason = "";
-
-			var chain = GetPropertyInfoChain(from, o.GetType(), name, PropertyAccess.Read, ref failReason);
-
-			if (chain == null || chain.Length == 0)
-			{
-				return failReason;
-			}
-
-			PropertyInfo p = GetPropertyInfo(ref o, chain, ref failReason);
-
-			return p == null ? failReason : InternalGetValue(o, p, chain);
-		}
-
-		public static string IncreaseValue(Mobile m, object o, string[] args)
-		{
-			int len = args.Length / 2;
-
-			var realObjs = new object[len];
-			var realProps = new PropertyInfo[len];
-			var realValues = new int[len];
-
-			bool positive = false, negative = false;
-
-			for (int i = 0; i < realProps.Length; ++i)
-			{
-				int idx = i * 2;
-				string name = args[idx];
-
-				try
-				{
-					string valueString = args[1 + idx];
-
-					if (valueString.StartsWith("0x"))
-					{
-						realValues[i] = Convert.ToInt32(valueString.Substring(2), 16);
-					}
-					else
-					{
-						realValues[i] = Convert.ToInt32(valueString);
-					}
-				}
-				catch
-				{
-					return "Offset value could not be parsed.";
-				}
-
-				if (realValues[i] > 0)
-				{
-					positive = true;
-				}
-				else if (realValues[i] < 0)
-				{
-					negative = true;
-				}
+				if ( !BaseCommand.IsAccessible( from, o ) )
+					from.SendMessage( "That is not accessible." );
 				else
-				{
-					return "Zero is not a valid value to offset.";
-				}
-
-				string failReason = null;
-				
-				realObjs[i] = o;
-				realProps[i] = GetPropertyInfo(m, ref realObjs[i], name, PropertyAccess.ReadWrite, ref failReason);
-
-				if (failReason != null)
-				{
-					return failReason;
-				}
-
-				if (realProps[i] == null)
-				{
-					return "Property not found.";
-				}
-			}
-
-			for (int i = 0; i < realProps.Length; ++i)
-			{
-				object obj = realProps[i].GetValue(realObjs[i], null);
-
-				if (!(obj is IConvertible))
-				{
-					return "Property is not IConvertable.";
-				}
-
-				try
-				{
-					long v = Convert.ToInt64(obj) + realValues[i];
-					object toSet = Convert.ChangeType(v, realProps[i].PropertyType);
-					realProps[i].SetValue(realObjs[i], toSet, null);
-
-					EventSink.InvokeOnPropertyChanged(new OnPropertyChangedEventArgs(m, realObjs[i], realProps[i], obj, toSet));
-				}
-				catch
-				{
-					return "Value could not be converted";
-				}
-			}
-
-			if (realProps.Length == 1)
-			{
-				return String.Format("The property has been {0}.", positive ? "increased." : "decreased");
-			}
-
-			if (positive && negative)
-			{
-				return "The properties have been changed.";
-			}
-
-			return String.Format("The properties have been {0}.", positive ? "increased." : "decreased");
-		}
-
-		public static string SetValue(Mobile m, object o, string name, string value)
-		{
-			object logObject = o;
-			string failReason = "";
-			PropertyInfo p = GetPropertyInfo(m, ref o, name, PropertyAccess.Write, ref failReason);
-
-			return p == null ? failReason : InternalSetValue(m, logObject, o, p, name, value, true);
-		}
-
-		public static string ConstructFromString(Type type, object obj, string value, ref object constructed)
-		{
-			object toSet;
-			bool isSerial = IsSerial(type);
-			bool isCustomSerial = IsCustomSerial(type);
-
-			if (isSerial || isCustomSerial) // mutate into int32
-			{
-				type = _NumericTypes[4];
-			}
-
-			if (value == "(-null-)" && !type.IsValueType)
-			{
-				value = null;
-			}
-
-			if (IsEnum(type))
-			{
-				try
-				{
-					toSet = Enum.Parse(type, value ?? String.Empty, true);
-				}
-				catch
-				{
-					return "That is not a valid enumeration member.";
-				}
-			}
-			else if (IsType(type))
-			{
-				try
-				{
-					toSet = ScriptCompiler.FindTypeByName(value);
-
-					if (toSet == null)
-					{
-						return "No type with that name was found.";
-					}
-				}
-				catch
-				{
-					return "No type with that name was found.";
-				}
-			}
-			else if (IsParsable(type))
-			{
-				try
-				{
-					toSet = Parse(obj, type, value);
-				}
-				catch
-				{
-					return "That is not properly formatted.";
-				}
-			}
-			else if (value == null)
-			{
-				toSet = null;
-			}
-			else if (value.StartsWith("0x") && IsNumeric(type))
-			{
-				try
-				{
-					toSet = Convert.ChangeType(Convert.ToUInt64(value.Substring(2), 16), type);
-				}
-				catch
-				{
-					return "That is not properly formatted.";
-				}
-			}
-			else
-			{
-				try
-				{
-					toSet = Convert.ChangeType(value, type);
-				}
-				catch
-				{
-					return "That is not properly formatted.";
-				}
-			}
-
-			if (isSerial) // mutate back
-			{
-				toSet = (Serial)Convert.ToInt32(toSet);
-			}
-			else if (isCustomSerial)
-			{
-				toSet = (CustomSerial)Convert.ToInt32(toSet);
-			}
-
-			constructed = toSet;
-			return null;
-		}
-
-		public static string SetDirect(
-			Mobile m, object logObject, object obj, PropertyInfo prop, string givenName, object toSet, bool shouldLog)
-		{
-			try
-			{
-				if (toSet is AccessLevel)
-				{
-					AccessLevel newLevel = (AccessLevel)toSet;
-					AccessLevel reqLevel = AccessLevel.Administrator;
-
-					if (newLevel == AccessLevel.Administrator)
-					{
-						reqLevel = AccessLevel.Developer;
-					}
-					else if (newLevel >= AccessLevel.Developer)
-					{
-						reqLevel = AccessLevel.Owner;
-					}
-
-					if (m.AccessLevel < reqLevel)
-					{
-						return "You do not have access to that level.";
-					}
-				}
-
-				if (shouldLog)
-				{
-					CommandLogging.LogChangeProperty(m, logObject, givenName, toSet == null ? "(-null-)" : toSet.ToString());
-				}
-
-				object oldValue = prop.GetValue(obj, null);
-				prop.SetValue(obj, toSet, null);
-
-				EventSink.InvokeOnPropertyChanged(new OnPropertyChangedEventArgs(m, obj, prop, oldValue, toSet));
-				
-				return "Property has been set.";
-			}
-			catch(Exception e)
-			{
-                Console.WriteLine(e.ToString());
-				return "An exception was caught, the property may not be set.";
+					from.SendGump( new PropertiesGump( from, o ) );
 			}
 		}
 
-		public static string SetDirect(object obj, PropertyInfo prop, object toSet)
+		[Usage( "Props [serial]" )]
+		[Description( "Opens a menu where you can view and edit all properties of a targeted (or specified) object." )]
+		private static void Props_OnCommand( CommandEventArgs e )
 		{
-			try
+			if ( e.Length == 1 )
 			{
-				if (toSet is AccessLevel)
-				{
-					return "You do not have access to that level.";
-				}
+				IEntity ent = World.FindEntity( e.GetInt32( 0 ) );
 
-				object oldValue = prop.GetValue(obj, null);
-				prop.SetValue(obj, toSet, null);
-
-				EventSink.InvokeOnPropertyChanged(new OnPropertyChangedEventArgs(null, obj, prop, oldValue, toSet));
-
-				return "Property has been set.";
-			}
-            catch (Exception e)
-			{
-                Console.WriteLine(e.ToString());
-				return "An exception was caught, the property may not be set.";
-			}
-		}
-
-		public static string InternalSetValue(
-			Mobile m, object logobj, object o, PropertyInfo p, string pname, string value, bool shouldLog)
-		{
-			IDynamicEnum toSet;
-			object toSetObj = null;
-			string result = null;
-
-			if (IsIDynamicEnum(p.PropertyType))
-			{
-				toSetObj = toSet = p.GetValue(o, null) as IDynamicEnum;
-
-				if (toSet != null)
-				{
-					toSet.Value = value;
-
-					if (!toSet.IsValid)
-					{
-						result = "No type with that name was found.";
-					}
-				}
+				if ( ent == null )
+					e.Mobile.SendMessage( "No object with that serial was found." );
+				else if ( !BaseCommand.IsAccessible( e.Mobile, ent ) )
+					e.Mobile.SendMessage( "That is not accessible." );
 				else
-				{
-					result = "That is not properly formatted.";
-				}
-			}
-			else
-			{
-				result = ConstructFromString(p.PropertyType, o, value, ref toSetObj);
-			}
-
-			return result ?? SetDirect(m, logobj, o, p, pname, toSetObj, shouldLog);
-		}
-
-		public static string InternalSetValue(object o, PropertyInfo p, string value)
-		{
-			IDynamicEnum toSet;
-			object toSetObj = null;
-			string result = null;
-
-			if (IsIDynamicEnum(p.PropertyType))
-			{
-				toSetObj = toSet = p.GetValue(o, null) as IDynamicEnum;
-
-				if (toSet != null)
-				{
-					toSet.Value = value;
-
-					if (!toSet.IsValid)
-					{
-						result = "No type with that name was found.";
-					}
-				}
-				else
-				{
-					result = "That is not properly formatted.";
-				}
-			}
-			else
-			{
-				result = ConstructFromString(p.PropertyType, o, value, ref toSetObj);
-			}
-
-			return result ?? SetDirect(o, p, toSetObj);
-		}
-
-		[Usage("Props [serial]")]
-		[Description("Opens a menu where you can view and edit all properties of a targeted (or specified) object.")]
-		private static void Props_OnCommand(CommandEventArgs e)
-		{
-			if (e.Length == 1)
-			{
-				IEntity ent = World.FindEntity(e.GetInt32(0));
-
-				if (ent == null)
-				{
-					e.Mobile.SendMessage("No object with that serial was found.");
-				}
-				else if (!BaseCommand.IsAccessible(e.Mobile, ent))
-				{
-					e.Mobile.SendMessage("That is not accessible.");
-				}
-				else
-				{
-					e.Mobile.SendGump(new PropertiesGump(e.Mobile, ent));
-				}
+					e.Mobile.SendGump( new PropertiesGump( e.Mobile, ent ) );
 			}
 			else
 			{
@@ -567,144 +61,468 @@ namespace Server.Commands
 			}
 		}
 
-		private static bool CIEqual(string l, string r)
+		private static bool CIEqual( string l, string r )
 		{
-			return Insensitive.Equals(l, r);
+			return Insensitive.Equals( l, r );
 		}
 
-		private static string InternalGetValue(object o, PropertyInfo p, PropertyInfo[] chain = null)
+		private static Type typeofCPA = typeof( CPA );
+
+		public static CPA GetCPA( PropertyInfo p )
+		{
+			object[] attrs = p.GetCustomAttributes( typeofCPA, false );
+
+			if ( attrs.Length == 0 )
+				return null;
+
+			return attrs[0] as CPA;
+		}
+
+		public static PropertyInfo[] GetPropertyInfoChain( Mobile from, Type type, string propertyString, PropertyAccess endAccess, ref string failReason )
+		{
+			string[] split = propertyString.Split( '.' );
+
+			if ( split.Length == 0 )
+				return null;
+
+			PropertyInfo[] info = new PropertyInfo[split.Length];
+
+			for ( int i = 0; i < info.Length; ++i )
+			{
+				string propertyName = split[i];
+
+				if ( CIEqual( propertyName, "current" ) )
+					continue;
+
+				PropertyInfo[] props = type.GetProperties( BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public );
+
+				bool isFinal = ( i == (info.Length - 1) );
+
+				PropertyAccess access = endAccess;
+
+				if ( !isFinal )
+					access |= PropertyAccess.Read;
+
+				for ( int j = 0; j < props.Length; ++j )
+				{
+					PropertyInfo p = props[j];
+
+					if ( CIEqual( p.Name, propertyName ) )
+					{
+						CPA attr = GetCPA( p );
+
+						if ( attr == null )
+						{
+							failReason = String.Format( "Property '{0}' not found.", propertyName );
+							return null;
+						}
+						else if ( (access & PropertyAccess.Read) != 0 && from.AccessLevel < attr.ReadLevel )
+						{
+							failReason = String.Format( "You must be at least {0} to get the property '{1}'.",
+								Mobile.GetAccessLevelName( attr.ReadLevel ), propertyName );
+
+							return null;
+						}
+						else if ( (access & PropertyAccess.Write) != 0 && from.AccessLevel < attr.WriteLevel )
+						{
+							failReason = String.Format( "You must be at least {0} to set the property '{1}'.",
+								Mobile.GetAccessLevelName( attr.WriteLevel ), propertyName );
+
+							return null;
+						}
+						else if ( (access & PropertyAccess.Read) != 0 && !p.CanRead )
+						{
+							failReason = String.Format( "Property '{0}' is write only.", propertyName );
+							return null;
+						}
+						else if ( (access & PropertyAccess.Write) != 0 && !p.CanWrite && isFinal )
+						{
+							failReason = String.Format( "Property '{0}' is read only.", propertyName );
+							return null;
+						}
+
+						info[i] = p;
+						type = p.PropertyType;
+						break;
+					}
+				}
+
+				if ( info[i] == null )
+				{
+					failReason = String.Format( "Property '{0}' not found.", propertyName );
+					return null;
+				}
+			}
+
+			return info;
+		}
+
+		public static PropertyInfo GetPropertyInfo( Mobile from, ref object obj, string propertyName, PropertyAccess access, ref string failReason )
+		{
+			PropertyInfo[] chain = GetPropertyInfoChain( from, obj.GetType(), propertyName, access, ref failReason );
+
+			if ( chain == null )
+				return null;
+
+			return GetPropertyInfo( ref obj, chain, ref failReason );
+		}
+
+		public static PropertyInfo GetPropertyInfo( ref object obj, PropertyInfo[] chain, ref string failReason )
+		{
+			if ( chain == null || chain.Length == 0 )
+			{
+				failReason = "Property chain is empty.";
+				return null;
+			}
+
+			for ( int i = 0; i < chain.Length - 1; ++i )
+			{
+				if ( chain[i] == null )
+					continue;
+
+				obj = chain[i].GetValue( obj, null );
+
+				if ( obj == null )
+				{
+					failReason = String.Format( "Property '{0}' is null.", chain[i] );
+					return null;
+				}
+			}
+
+			return chain[chain.Length-1];
+		}
+
+		public static string GetValue( Mobile from, object o, string name )
+		{
+			string failReason = "";
+
+			PropertyInfo[] chain = GetPropertyInfoChain( from, o.GetType(), name, PropertyAccess.Read, ref failReason );
+
+			if ( chain == null || chain.Length == 0 )
+				return failReason;
+
+			PropertyInfo p = GetPropertyInfo( ref o, chain, ref failReason );
+
+			if ( p == null )
+				return failReason;
+
+			return InternalGetValue( o, p, chain );
+		}
+
+		public static string IncreaseValue( Mobile from, object o, string[] args )
+		{
+			Type type = o.GetType();
+
+			object[] realObjs = new object[args.Length/2];
+			PropertyInfo[] realProps = new PropertyInfo[args.Length/2];
+			int[] realValues = new int[args.Length/2];
+
+			bool positive = false, negative = false;
+
+			for ( int i = 0; i < realProps.Length; ++i )
+			{
+				string name = args[i*2];
+
+				try
+				{
+					string valueString = args[1 + (i*2)];
+
+					if ( valueString.StartsWith( "0x" ) )
+					{
+						realValues[i] = Convert.ToInt32( valueString.Substring( 2 ), 16 );
+					}
+					else
+					{
+						realValues[i] = Convert.ToInt32( valueString );
+					}
+				}
+				catch
+				{
+					return "Offset value could not be parsed.";
+				}
+
+				if ( realValues[i] > 0 )
+					positive = true;
+				else if ( realValues[i] < 0 )
+					negative = true;
+				else
+					return "Zero is not a valid value to offset.";
+
+				string failReason = null;
+				realObjs[i] = o;
+				realProps[i] = GetPropertyInfo( from, ref realObjs[i], name, PropertyAccess.ReadWrite, ref failReason );
+
+				if ( failReason != null )
+					return failReason;
+
+				if ( realProps[i] == null )
+					return "Property not found.";
+			}
+
+			for ( int i = 0; i < realProps.Length; ++i )
+			{
+				object obj = realProps[i].GetValue( realObjs[i], null );
+				long v = (long)Convert.ChangeType( obj, TypeCode.Int64 );
+				v += realValues[i];
+
+				realProps[i].SetValue( realObjs[i], Convert.ChangeType( v, realProps[i].PropertyType ), null );
+			}
+
+			if ( realProps.Length == 1 )
+			{
+				if ( positive )
+					return "The property has been increased.";
+
+				return "The property has been decreased.";
+			}
+
+			if ( positive && negative )
+				return "The properties have been changed.";
+
+			if ( positive )
+				return "The properties have been increased.";
+
+			return "The properties have been decreased.";
+		}
+
+		private static string InternalGetValue( object o, PropertyInfo p )
+		{
+			return InternalGetValue( o, p, null );
+		}
+
+		private static string InternalGetValue( object o, PropertyInfo p, PropertyInfo[] chain )
 		{
 			Type type = p.PropertyType;
-			object value = p.GetValue(o, null);
+
+			object value = p.GetValue( o, null );
 			string toString;
 
-			if (value == null)
-			{
+			if ( value == null )
 				toString = "null";
-			}
-			else if (IsNumeric(type))
-			{
-				toString = String.Format("{0} (0x{0:X})", value);
-			}
-			else if (IsChar(type))
-			{
-				toString = String.Format("'{0}' ({1} [0x{1:X}])", value, (int)value);
-			}
-			else if (IsString(type))
-			{
-				toString = (string)value == "null" ? @"@""null""" : String.Format("\"{0}\"", value);
-			}
-			else if (IsIDynamicEnum(type))
-			{
-				toString = ((IDynamicEnum)value).Value == "null"
-							   ? @"@""null"""
-							   : String.Format("\"{0}\"", ((IDynamicEnum)value).Value);
-			}
-			else if (IsText(type))
-			{
-				toString = ((TextDefinition)value).Format(false);
-			}
+			else if ( IsNumeric( type ) )
+				toString = String.Format( "{0} (0x{0:X})", value );
+			else if ( IsChar( type ) )
+				toString = String.Format( "'{0}' ({1} [0x{1:X}])", value, (int) value );
+			else if ( IsString( type ) )
+				toString = ( (string) value == "null" ? @"@""null""" : String.Format( "\"{0}\"", value ) );
 			else
-			{
 				toString = value.ToString();
-			}
 
-			if (chain == null)
+			if ( chain == null )
+				return String.Format( "{0} = {1}", p.Name, toString );
+
+			string[] concat = new string[chain.Length*2+1];
+
+			for ( int i = 0; i < chain.Length; ++i )
 			{
-				return String.Format("{0} = {1}", p.Name, toString);
+				concat[(i*2)+0] = chain[i].Name;
+				concat[(i*2)+1] = ( i < (chain.Length - 1) ) ? "." : " = ";
 			}
 
-			var concat = new string[chain.Length * 2 + 1];
+			concat[concat.Length-1] = toString;
 
-			for (int i = 0; i < chain.Length; ++i)
-			{
-				int idx = i * 2;
-
-				concat[idx] = chain[i].Name;
-				concat[idx + 1] = i < chain.Length - 1 ? "." : " = ";
-			}
-
-			concat[concat.Length - 1] = toString;
-
-			return String.Concat(concat);
+			return String.Concat( concat );
 		}
 
-		private static bool IsSerial(Type t)
+		public static string SetValue( Mobile from, object o, string name, string value )
 		{
-			return t == _TypeOfSerial;
+			object logObject = o;
+
+			string failReason = "";
+			PropertyInfo p = GetPropertyInfo( from, ref o, name, PropertyAccess.Write, ref failReason );
+
+			if ( p == null )
+				return failReason;
+
+			return InternalSetValue( from, logObject, o, p, name, value, true );
 		}
 
-		private static bool IsCustomSerial(Type t)
+		private static Type typeofSerial = typeof( Serial );
+
+		private static bool IsSerial( Type t )
 		{
-			return t == _TypeOfCustomSerial;
+			return ( t == typeofSerial );
 		}
 
-		private static bool IsType(Type t)
+		private static Type typeofType = typeof( Type );
+
+		private static bool IsType( Type t )
 		{
-			return t == _TypeOfType;
+			return ( t == typeofType );
 		}
 
-		private static bool IsChar(Type t)
+		private static Type typeofChar = typeof( Char );
+
+		private static bool IsChar( Type t )
 		{
-			return t == _TypeOfChar;
+			return ( t == typeofChar );
 		}
 
-		private static bool IsString(Type t)
+		private static Type typeofString = typeof( String );
+
+		private static bool IsString( Type t )
 		{
-			return t == _TypeOfString;
+			return ( t == typeofString );
 		}
 
-		private static bool IsIDynamicEnum(Type t)
-		{
-			return _TypeOfIDynamicEnum.IsAssignableFrom(t);
-		}
-
-		private static bool IsText(Type t)
-		{
-			return t == _TypeOfText;
-		}
-
-		private static bool IsEnum(Type t)
+		private static bool IsEnum( Type t )
 		{
 			return t.IsEnum;
 		}
 
-		private static bool IsParsable(Type t)
+		private static Type typeofTimeSpan = typeof( TimeSpan );
+		private static Type typeofParsable = typeof( ParsableAttribute );
+
+		private static bool IsParsable( Type t )
 		{
-			return t == _TypeOfTimeSpan || t.IsDefined(_TypeOfParsable, false);
+			return ( t == typeofTimeSpan || t.IsDefined( typeofParsable, false ) );
 		}
 
-		private static object Parse(object o, Type t, string value)
+		private static Type[] m_ParseTypes = new Type[]{ typeof( string ) };
+		private static object[] m_ParseParams = new object[1];
+
+		private static object Parse( object o, Type t, string value )
 		{
-			MethodInfo method = t.GetMethod("Parse", _ParseTypes);
+			MethodInfo method = t.GetMethod( "Parse", m_ParseTypes );
 
-			_ParseParams[0] = value;
+			m_ParseParams[0] = value;
 
-			return method.Invoke(o, _ParseParams);
+			return method.Invoke( o, m_ParseParams );
 		}
 
-		private static bool IsNumeric(Type t)
-		{
-			return Array.IndexOf(_NumericTypes, t) >= 0;
-		}
-
-		private class PropsTarget : Target
-		{
-			public PropsTarget()
-				: base(-1, true, TargetFlags.None)
-			{ }
-
-			protected override void OnTarget(Mobile from, object o)
+		private static Type[] m_NumericTypes = new Type[]
 			{
-				if (!BaseCommand.IsAccessible(from, o))
+				typeof( Byte ), typeof( SByte ),
+				typeof( Int16 ), typeof( UInt16 ),
+				typeof( Int32 ), typeof( UInt32 ),
+				typeof( Int64 ), typeof( UInt64 )
+			};
+
+		private static bool IsNumeric( Type t )
+		{
+			return ( Array.IndexOf( m_NumericTypes, t ) >= 0 );
+		}
+
+		public static string ConstructFromString( Type type, object obj, string value, ref object constructed )
+		{
+			object toSet;
+			bool isSerial = IsSerial( type );
+
+			if ( isSerial ) // mutate into int32
+				type = m_NumericTypes[4];
+
+			if ( value == "(-null-)" && !type.IsValueType )
+				value = null;
+
+			if ( IsEnum( type ) )
+			{
+				try
 				{
-					from.SendMessage("That is not accessible.");
+					toSet = Enum.Parse( type, value, true );
 				}
-				else
+				catch
 				{
-					from.SendGump(new PropertiesGump(from, o));
+					return "That is not a valid enumeration member.";
 				}
 			}
+			else if ( IsType( type ) )
+			{
+				try
+				{
+					toSet = ScriptCompiler.FindTypeByName( value );
+
+					if ( toSet == null )
+						return "No type with that name was found.";
+				}
+				catch
+				{
+					return "No type with that name was found.";
+				}
+			}
+			else if ( IsParsable( type ) )
+			{
+				try
+				{
+					toSet = Parse( obj, type, value );
+				}
+				catch
+				{
+					return "That is not properly formatted.";
+				}
+			}
+			else if ( value == null )
+			{
+				toSet = null;
+			}
+			else if ( value.StartsWith( "0x" ) && IsNumeric( type ) )
+			{
+				try
+				{
+					toSet = Convert.ChangeType( Convert.ToUInt64( value.Substring( 2 ), 16 ), type );
+				}
+				catch
+				{
+					return "That is not properly formatted.";
+				}
+			}
+			else
+			{
+				try
+				{
+					toSet = Convert.ChangeType( value, type );
+				}
+				catch
+				{
+					return "That is not properly formatted.";
+				}
+			}
+
+			if ( isSerial ) // mutate back
+				toSet = (Serial)((Int32)toSet);
+
+			constructed = toSet;
+			return null;
+		}
+
+		public static string SetDirect( Mobile from, object logObject, object obj, PropertyInfo prop, string givenName, object toSet, bool shouldLog )
+		{
+			try
+			{
+				if ( toSet is AccessLevel )
+				{
+					AccessLevel newLevel = (AccessLevel) toSet;
+					AccessLevel reqLevel = AccessLevel.Administrator;
+
+					if ( newLevel == AccessLevel.Administrator )
+						reqLevel = AccessLevel.Developer;
+					else if ( newLevel >= AccessLevel.Developer )
+						reqLevel = AccessLevel.Owner;
+
+					if ( from.AccessLevel < reqLevel )
+						return "You do not have access to that level.";
+				}
+
+				if ( shouldLog )
+					CommandLogging.LogChangeProperty( from, logObject, givenName, toSet == null ? "(-null-)" : toSet.ToString() );
+
+				prop.SetValue( obj, toSet, null );
+				return "Property has been set.";
+			}
+			catch
+			{
+				return "An exception was caught, the property may not be set.";
+			}
+		}
+
+		public static string InternalSetValue( Mobile from, object logobj, object o, PropertyInfo p, string pname, string value, bool shouldLog )
+		{
+			object toSet = null;
+			string result = ConstructFromString( p.PropertyType, o, value, ref toSet );
+
+			if ( result != null )
+				return result;
+
+			return SetDirect( from, logobj, o, p, pname, toSet, shouldLog );
 		}
 	}
 }
@@ -713,120 +531,155 @@ namespace Server
 {
 	public abstract class PropertyException : ApplicationException
 	{
-		public Property Property { get; protected set; }
+		protected Property m_Property;
 
-		public PropertyException(Property property, string message)
-			: base(message)
+		public Property Property
 		{
-			Property = property;
+			get { return m_Property; }
+		}
+
+		public PropertyException( Property property, string message )
+			: base( message )
+		{
+			m_Property = property;
 		}
 	}
 
 	public abstract class BindingException : PropertyException
 	{
-		public BindingException(Property property, string message)
-			: base(property, message)
-		{ }
+		public BindingException( Property property, string message )
+			: base( property, message )
+		{
+		}
 	}
 
 	public sealed class NotYetBoundException : BindingException
 	{
-		public NotYetBoundException(Property property)
-			: base(property, String.Format("Property has not yet been bound."))
-		{ }
+		public NotYetBoundException( Property property )
+			: base( property, String.Format( "Property has not yet been bound." ) )
+		{
+		}
 	}
 
 	public sealed class AlreadyBoundException : BindingException
 	{
-		public AlreadyBoundException(Property property)
-			: base(property, String.Format("Property has already been bound."))
-		{ }
+		public AlreadyBoundException( Property property )
+			: base( property, String.Format( "Property has already been bound." ) )
+		{
+		}
 	}
 
 	public sealed class UnknownPropertyException : BindingException
 	{
-		public UnknownPropertyException(Property property, string current)
-			: base(property, String.Format("Property '{0}' not found.", current))
-		{ }
+		public UnknownPropertyException( Property property, string current )
+			: base( property, String.Format( "Property '{0}' not found.", current ) )
+		{
+		}
 	}
 
 	public sealed class ReadOnlyException : BindingException
 	{
-		public ReadOnlyException(Property property)
-			: base(property, "Property is read-only.")
-		{ }
+		public ReadOnlyException( Property property )
+			: base( property, "Property is read-only." )
+		{
+		}
 	}
 
 	public sealed class WriteOnlyException : BindingException
 	{
-		public WriteOnlyException(Property property)
-			: base(property, "Property is write-only.")
-		{ }
+		public WriteOnlyException( Property property )
+			: base( property, "Property is write-only." )
+		{
+		}
 	}
 
 	public abstract class AccessException : PropertyException
 	{
-		public AccessException(Property property, string message)
-			: base(property, message)
-		{ }
+		public AccessException( Property property, string message )
+			: base( property, message )
+		{
+		}
 	}
 
 	public sealed class InternalAccessException : AccessException
 	{
-		public InternalAccessException(Property property)
-			: base(property, "Property is internal.")
-		{ }
+		public InternalAccessException( Property property )
+			: base( property, "Property is internal." )
+		{
+		}
 	}
 
 	public abstract class ClearanceException : AccessException
 	{
-		public AccessLevel PlayerAccess { get; protected set; }
-		public AccessLevel NeededAccess { get; protected set; }
+		protected AccessLevel m_PlayerAccess;
+		protected AccessLevel m_NeededAccess;
 
-		public ClearanceException(Property property, AccessLevel playerAccess, AccessLevel neededAccess, string accessType)
-			: base(
-				property,
-				string.Format(
-					"You must be at least {0} to {1} this property, you are currently {2}.",
-					Mobile.GetAccessLevelName(neededAccess),
-					accessType,
-					Mobile.GetAccessLevelName(playerAccess)))
-		{ }
+		public AccessLevel PlayerAccess
+		{
+			get { return m_PlayerAccess; }
+		}
+
+		public AccessLevel NeededAccess
+		{
+			get { return m_NeededAccess; }
+		}
+
+		public ClearanceException( Property property, AccessLevel playerAccess, AccessLevel neededAccess, string accessType )
+			: base( property, string.Format(
+				"You must be at least {0} to {1} this property.",
+				Mobile.GetAccessLevelName( neededAccess ),
+				accessType
+			) )
+		{
+		}
 	}
 
 	public sealed class ReadAccessException : ClearanceException
 	{
-		public ReadAccessException(Property property, AccessLevel playerAccess, AccessLevel neededAccess)
-			: base(property, playerAccess, neededAccess, "read")
-		{ }
+		public ReadAccessException( Property property, AccessLevel playerAccess, AccessLevel neededAccess )
+			: base( property, playerAccess, neededAccess, "read" )
+		{
+		}
 	}
 
 	public sealed class WriteAccessException : ClearanceException
 	{
-		public WriteAccessException(Property property, AccessLevel playerAccess, AccessLevel neededAccess)
-			: base(property, playerAccess, neededAccess, "write")
-		{ }
+		public WriteAccessException( Property property, AccessLevel playerAccess, AccessLevel neededAccess )
+			: base( property, playerAccess, neededAccess, "write" )
+		{
+		}
 	}
 
 	public sealed class Property
 	{
-		private PropertyInfo[] _Chain;
+		private string m_Binding;
 
-		public PropertyAccess Access { get; private set; }
-		public string Binding { get; private set; }
+		private PropertyInfo[] m_Chain;
+		private PropertyAccess m_Access;
 
-		public bool IsBound { get { return _Chain != null; } }
+		public string Binding
+		{
+			get { return m_Binding; }
+		}
+
+		public bool IsBound
+		{
+			get { return ( m_Chain != null ); }
+		}
+
+		public PropertyAccess Access
+		{
+			get { return m_Access; }
+		}
 
 		public PropertyInfo[] Chain
 		{
 			get
 			{
-				if (!IsBound)
-				{
-					throw new NotYetBoundException(this);
-				}
+				if ( !IsBound )
+					throw new NotYetBoundException( this );
 
-				return _Chain;
+				return m_Chain;
 			}
 		}
 
@@ -834,133 +687,110 @@ namespace Server
 		{
 			get
 			{
-				if (!IsBound)
-				{
-					throw new NotYetBoundException(this);
-				}
+				if ( !IsBound )
+					throw new NotYetBoundException( this );
 
-				return _Chain[_Chain.Length - 1].PropertyType;
+				return m_Chain[m_Chain.Length - 1].PropertyType;
 			}
 		}
 
-		public Property(string binding)
+		public bool CheckAccess( Mobile from )
 		{
-			Binding = binding;
-		}
+			if ( !IsBound )
+				throw new NotYetBoundException( this );
 
-		public Property(PropertyInfo[] chain)
-		{
-			_Chain = chain;
-		}
-
-		public static Property Parse(Type type, string binding, PropertyAccess access)
-		{
-			Property prop = new Property(binding);
-
-			prop.BindTo(type, access);
-
-			return prop;
-		}
-
-		public bool CheckAccess(Mobile from)
-		{
-			if (!IsBound)
+			for ( int i = 0; i < m_Chain.Length; ++i )
 			{
-				throw new NotYetBoundException(this);
-			}
+				PropertyInfo prop = m_Chain[i];
 
-			for (int i = 0; i < _Chain.Length; ++i)
-			{
-				PropertyAccess access = Access;
-				PropertyInfo prop = _Chain[i];
-				bool isFinal = i == _Chain.Length - 1;
+				bool isFinal = ( i == ( m_Chain.Length - 1 ) );
 
-				if (!isFinal)
-				{
+				PropertyAccess access = m_Access;
+
+				if ( !isFinal )
 					access |= PropertyAccess.Read;
-				}
 
-				CPA security = Properties.GetCPA(prop);
+				CPA security = Properties.GetCPA( prop );
 
-				if (security == null)
-				{
-					throw new InternalAccessException(this);
-				}
+				if ( security == null )
+					throw new InternalAccessException( this );
 
-				if ((access & PropertyAccess.Read) != 0 && from.AccessLevel < security.ReadLevel)
-				{
-					throw new ReadAccessException(this, from.AccessLevel, security.ReadLevel);
-				}
+				if ( ( access & PropertyAccess.Read ) != 0 && from.AccessLevel < security.ReadLevel )
+					throw new ReadAccessException( this, from.AccessLevel, security.ReadLevel );
 
-				if ((access & PropertyAccess.Write) != 0 && (from.AccessLevel < security.WriteLevel || security.ReadOnly))
-				{
-					throw new WriteAccessException(this, from.AccessLevel, security.ReadLevel);
-				}
+				if ( ( access & PropertyAccess.Write ) != 0 && from.AccessLevel < security.WriteLevel )
+					throw new WriteAccessException( this, from.AccessLevel, security.ReadLevel );
 			}
 
 			return true;
 		}
 
-		public void BindTo(Type objectType, PropertyAccess desiredAccess)
+		public void BindTo( Type objectType, PropertyAccess desiredAccess )
 		{
-			if (IsBound)
+			if ( IsBound )
+				throw new AlreadyBoundException( this );
+
+			string[] split = m_Binding.Split( '.' );
+
+			PropertyInfo[] chain = new PropertyInfo[split.Length];
+
+			for ( int i = 0; i < split.Length; ++i )
 			{
-				throw new AlreadyBoundException(this);
-			}
+				bool isFinal = ( i == ( chain.Length - 1 ) );
 
-			var split = Binding.Split('.');
-			var chain = new PropertyInfo[split.Length];
+				chain[i] = objectType.GetProperty( split[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase );
 
-			for (int i = 0; i < split.Length; ++i)
-			{
-				bool isFinal = i == chain.Length - 1;
-
-				chain[i] = objectType.GetProperty(split[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
-
-				if (chain[i] == null)
-				{
-					throw new UnknownPropertyException(this, split[i]);
-				}
+				if ( chain[i] == null )
+					throw new UnknownPropertyException( this, split[i] );
 
 				objectType = chain[i].PropertyType;
 
 				PropertyAccess access = desiredAccess;
 
-				if (!isFinal)
-				{
+				if ( !isFinal )
 					access |= PropertyAccess.Read;
-				}
 
-				if ((access & PropertyAccess.Read) != 0 && !chain[i].CanRead)
-				{
-					throw new WriteOnlyException(this);
-				}
+				if ( ( access & PropertyAccess.Read ) != 0 && !chain[i].CanRead )
+					throw new WriteOnlyException( this );
 
-				if ((access & PropertyAccess.Write) != 0 && !chain[i].CanWrite)
-				{
-					throw new ReadOnlyException(this);
-				}
+				if ( ( access & PropertyAccess.Write ) != 0 && !chain[i].CanWrite )
+					throw new ReadOnlyException( this );
 			}
 
-			Access = desiredAccess;
-			_Chain = chain;
+			m_Access = desiredAccess;
+			m_Chain = chain;
+		}
+
+		public Property( string binding )
+		{
+			m_Binding = binding;
+		}
+
+		public Property( PropertyInfo[] chain )
+		{
+			m_Chain = chain;
 		}
 
 		public override string ToString()
 		{
-			if (!IsBound)
-			{
-				return Binding;
-			}
+			if ( !IsBound )
+				return m_Binding;
 
-			var toJoin = new string[_Chain.Length];
+			string[] toJoin = new string[m_Chain.Length];
 
-			for (int i = 0; i < toJoin.Length; ++i)
-			{
-				toJoin[i] = _Chain[i].Name;
-			}
+			for ( int i = 0; i < toJoin.Length; ++i )
+				toJoin[i] = m_Chain[i].Name;
 
-			return string.Join(".", toJoin);
+			return string.Join( ".", toJoin );
+		}
+
+		public static Property Parse( Type type, string binding, PropertyAccess access )
+		{
+			Property prop = new Property( binding );
+
+			prop.BindTo( type, access );
+
+			return prop;
 		}
 	}
 }
