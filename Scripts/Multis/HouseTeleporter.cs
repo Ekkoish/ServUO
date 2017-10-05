@@ -1,207 +1,187 @@
 using System;
-using System.Collections.Generic;
-using Server.ContextMenus;
+using System.Collections;
+using Server;
 using Server.Gumps;
 using Server.Multis;
+using Server.Targeting;
+using System.Collections.Generic;
+using Server.ContextMenus;
 
 namespace Server.Items
 {
-    public class HouseTeleporter : Item, ISecurable
-    {
-        private Item m_Target;
-        private SecureLevel m_Level;
-        [Constructable]
-        public HouseTeleporter(int itemID)
-            : this(itemID, null)
-        {
-        }
+	public class HouseTeleporter : Item, ISecurable
+	{
+		private Item m_Target;
+		private SecureLevel m_Level;
 
-        public HouseTeleporter(int itemID, Item target)
-            : base(itemID)
-        {
-            Movable = false;
+		[CommandProperty( AccessLevel.GameMaster )]
+		public Item Target
+		{
+			get{ return m_Target; }
+			set{ m_Target = value; }
+		}
 
-            m_Level = SecureLevel.Anyone;
+		[CommandProperty( AccessLevel.GameMaster )]
+		public SecureLevel Level
+		{
+			get{ return m_Level; }
+			set{ m_Level = value; }
+		}
 
-            m_Target = target;
-        }
+		[Constructable]
+		public HouseTeleporter( int itemID ) : this( itemID, null )
+		{
+		}
 
-        public HouseTeleporter(Serial serial)
-            : base(serial)
-        {
-        }
+		public HouseTeleporter( int itemID, Item target ) : base( itemID )
+		{
+			Movable = false;
 
-        [CommandProperty(AccessLevel.GameMaster)]
-        public Item Target
-        {
-            get
-            {
-                return m_Target;
-            }
-            set
-            {
-                m_Target = value;
-            }
-        }
-        [CommandProperty(AccessLevel.GameMaster)]
-        public SecureLevel Level
-        {
-            get
-            {
-                return m_Level;
-            }
-            set
-            {
-                m_Level = value;
-            }
-        }
-        public virtual bool CheckAccess(Mobile m)
-        {
-            BaseHouse house = BaseHouse.FindHouseAt(this);
+			m_Level = SecureLevel.Anyone;
 
-            if (house != null && (house.Public ? house.IsBanned(m) : !house.HasAccess(m)))
-            {
-                m.SendLocalizedMessage(1115577); // You cannot teleport from here to the destination because you do not have the correct house permissions. 
-                return false;
-            }
+			m_Target = target;
+		}
 
-            if (house == null || !house.HasSecureAccess(m, m_Level))
-            {
-                m.SendLocalizedMessage(1115577); // You cannot teleport from here to the destination because you do not have the correct house permissions.
-                return false;
-            }
+		public bool CheckAccess( Mobile m )
+		{
+			BaseHouse house = BaseHouse.FindHouseAt( this );
 
-            return true;
-        }
+			if ( house != null && (house.Public ? house.IsBanned( m ) : !house.HasAccess( m )) )
+				return false;
 
-        public override bool OnMoveOver(Mobile m)
-        {
-            if (m_Target != null && !m_Target.Deleted)
-            {
-                if (CheckAccess(m))
-                {
-                    if (!m.Hidden || m.IsPlayer())
-                        new EffectTimer(Location, Map, 2023, 0x1F0, TimeSpan.FromSeconds(0.4)).Start();
+			return ( house != null && house.HasSecureAccess( m, m_Level ) );
+		}
 
-                    new DelayTimer(this, m).Start();
-                }
-            }
+		public override bool OnMoveOver( Mobile m )
+		{
+			if ( m_Target != null && !m_Target.Deleted )
+			{
+				if ( CheckAccess( m ) )
+				{
+					if ( !m.Hidden || m.AccessLevel == AccessLevel.Player )
+						new EffectTimer( Location, Map, 2023, 0x1F0, TimeSpan.FromSeconds( 0.4 ) ).Start();
 
-            return true;
-        }
+					new DelayTimer( this, m ).Start();
+				}
+				else
+				{
+					m.SendLocalizedMessage( 1061637 ); // You are not allowed to access this.
+				}
+			}
 
-        public override void GetContextMenuEntries(Mobile from, List<ContextMenuEntry> list)
-        {
-            base.GetContextMenuEntries(from, list);
-            SetSecureLevelEntry.AddTo(from, this, list);
-        }
+			return true;
+		}
 
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public override void GetContextMenuEntries( Mobile from, List<ContextMenuEntry> list )
+		{
+			base.GetContextMenuEntries( from, list );
+			SetSecureLevelEntry.AddTo( from, this, list );
+		}
 
-            writer.Write((int)1); // version
+		public HouseTeleporter( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.Write((int)m_Level);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            writer.Write((Item)m_Target);
-        }
+			writer.Write( (int) 1 ); // version
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.Write( (int) m_Level );
 
-            int version = reader.ReadInt();
+			writer.Write( (Item) m_Target );
+		}
 
-            switch ( version )
-            {
-                case 1:
-                    {
-                        m_Level = (SecureLevel)reader.ReadInt();
-                        goto case 0;
-                    }
-                case 0:
-                    {
-                        m_Target = reader.ReadItem();
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-                        if (version < 0)
-                            m_Level = SecureLevel.Anyone;
+			int version = reader.ReadInt();
 
-                        break;
-                    }
-            }
-        }
+			switch ( version )
+			{
+				case 1:
+				{
+					m_Level = (SecureLevel)reader.ReadInt();
+					goto case 0;
+				}
+				case 0:
+				{
+					m_Target = reader.ReadItem();
 
-        public virtual void OnAfterTeleport(Mobile m)
-        {
-        }
+					if ( version < 0 )
+						m_Level = SecureLevel.Anyone;
 
-        private class EffectTimer : Timer
-        {
-            private readonly Point3D m_Location;
-            private readonly Map m_Map;
-            private readonly int m_EffectID;
-            private readonly int m_SoundID;
-            public EffectTimer(Point3D p, Map map, int effectID, int soundID, TimeSpan delay)
-                : base(delay)
-            {
-                m_Location = p;
-                m_Map = map;
-                m_EffectID = effectID;
-                m_SoundID = soundID;
-            }
+					break;
+				}
+			}
+		}
 
-            protected override void OnTick()
-            {
-                Effects.SendLocationParticles(EffectItem.Create(m_Location, m_Map, EffectItem.DefaultDuration), 0x3728, 10, 10, m_EffectID, 0);
+		private class EffectTimer : Timer
+		{
+			private Point3D m_Location;
+			private Map m_Map;
+			private int m_EffectID;
+			private int m_SoundID;
 
-                if (m_SoundID != -1)
-                    Effects.PlaySound(m_Location, m_Map, m_SoundID);
-            }
-        }
+			public EffectTimer( Point3D p, Map map, int effectID, int soundID, TimeSpan delay ) : base( delay )
+			{
+				m_Location = p;
+				m_Map = map;
+				m_EffectID = effectID;
+				m_SoundID = soundID;
+			}
 
-        private class DelayTimer : Timer
-        {
-            private readonly HouseTeleporter m_Teleporter;
-            private readonly Mobile m_Mobile;
-            public DelayTimer(HouseTeleporter tp, Mobile m)
-                : base(TimeSpan.FromSeconds(1.0))
-            {
-                m_Teleporter = tp;
-                m_Mobile = m;
-            }
+			protected override void OnTick()
+			{
+				Effects.SendLocationParticles( EffectItem.Create( m_Location, m_Map, EffectItem.DefaultDuration ), 0x3728, 10, 10, m_EffectID, 0 );
 
-            protected override void OnTick()
-            {
-                Item target = m_Teleporter.m_Target;
+				if ( m_SoundID != -1 )
+					Effects.PlaySound( m_Location, m_Map, m_SoundID );
+			}
+		}
 
-                if (target != null && !target.Deleted)
-                {
-                    Mobile m = m_Mobile;
+		private class DelayTimer : Timer
+		{
+			private HouseTeleporter m_Teleporter;
+			private Mobile m_Mobile;
 
-                    if (m.X == m_Teleporter.X && m.Y == m_Teleporter.Y && Math.Abs(m.Z - m_Teleporter.Z) <= 1 && m.Map == m_Teleporter.Map)
-                    {
-                        Point3D p = target.GetWorldTop();
-                        Map map = target.Map;
+			public DelayTimer( HouseTeleporter tp, Mobile m ) : base( TimeSpan.FromSeconds( 1.0 ) )
+			{
+				m_Teleporter = tp;
+				m_Mobile = m;
+			}
 
-                        Server.Mobiles.BaseCreature.TeleportPets(m, p, map);
+			protected override void OnTick()
+			{
+				Item target = m_Teleporter.m_Target;
 
-                        m.MoveToWorld(p, map);
+				if ( target != null && !target.Deleted )
+				{
+					Mobile m = m_Mobile;
 
-                        if (!m.Hidden || m.IsPlayer())
-                        {
-                            Effects.PlaySound(target.Location, target.Map, 0x1FE);
+					if ( m.Location == m_Teleporter.Location && m.Map == m_Teleporter.Map )
+					{
+						Point3D p = target.GetWorldTop();
+						Map map = target.Map;
 
-                            Effects.SendLocationParticles(EffectItem.Create(m_Teleporter.Location, m_Teleporter.Map, EffectItem.DefaultDuration), 0x3728, 10, 10, 2023, 0);
-                            Effects.SendLocationParticles(EffectItem.Create(target.Location, target.Map, EffectItem.DefaultDuration), 0x3728, 10, 10, 5023, 0);
+						Server.Mobiles.BaseCreature.TeleportPets( m, p, map );
 
-                            new EffectTimer(target.Location, target.Map, 2023, -1, TimeSpan.FromSeconds(0.4)).Start();
-                        }
+						m.MoveToWorld( p, map );
 
-                        m_Teleporter.OnAfterTeleport(m);
-                    }
-                }
-            }
-        }
-    }
+						if ( !m.Hidden || m.AccessLevel == AccessLevel.Player )
+						{
+							Effects.PlaySound( target.Location, target.Map, 0x1FE );
+
+							Effects.SendLocationParticles( EffectItem.Create( m_Teleporter.Location, m_Teleporter.Map, EffectItem.DefaultDuration ), 0x3728, 10, 10, 2023, 0 );
+							Effects.SendLocationParticles( EffectItem.Create( target.Location, target.Map, EffectItem.DefaultDuration ), 0x3728, 10, 10, 5023, 0 );
+
+							new EffectTimer( target.Location, target.Map, 2023, -1, TimeSpan.FromSeconds( 0.4 ) ).Start();
+						}
+					}
+				}
+			}
+		}
+	}
 }

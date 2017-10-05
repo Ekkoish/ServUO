@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using Server;
-using Server.Multis;
 
 namespace Server.Misc
 {
@@ -39,8 +38,7 @@ namespace Server.Misc
 				new Point2D( 2448, 1232 ), new Point2D( 2272, 920 ), new Point2D( 2072, 1080 ),
 				new Point2D( 2048, 1264 ), new Point2D( 1808, 1528 ), new Point2D( 1496, 1880 ),
 				new Point2D( 1656, 2168 ), new Point2D( 2096, 2320 ), new Point2D( 1816, 2528 ),
-				new Point2D( 1840, 2640 ), new Point2D( 1928, 2952 ), new Point2D( 2120, 2712 ),
-                new Point2D( 4551, 2345 )
+				new Point2D( 1840, 2640 ), new Point2D( 1928, 2952 ), new Point2D( 2120, 2712 )
 			};
 
 		private static Point2D[] m_Trammel = m_Felucca;
@@ -100,27 +98,18 @@ namespace Server.Misc
 		{
 			Map map = from.Map;
 
-			if ( map == null || from.AccessLevel > AccessLevel.Player )
+			if ( map == null )
 				return false;
-
-            BaseBoat boat = BaseBoat.FindBoatAt(from, map);
-
-            if(boat != null && !boat.Deleted)
-                return false;
 
 			object surface = map.GetTopSurface( from.Location );
 
-			if ( surface is LandTile )
+			if ( surface is Tile )
 			{
-				int id = ((LandTile)surface).ID;
-			
+				int id = ((Tile)surface).ID;
+
 				return (id >= 168 && id <= 171)
-					|| (id >= 310 && id <= 311);
-			} 
-            else if ( surface is StaticTile )
-            {
-				int id = ((StaticTile)surface).ID;
-				return (id >= 0x1796 && id <= 0x17B2);
+					|| (id >= 310 && id <= 311)
+					|| (id >= 0x5796 && id <= 0x57B2);
 			}
 
 			return false;

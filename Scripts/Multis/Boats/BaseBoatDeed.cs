@@ -4,25 +4,20 @@ using Server.Regions;
 using Server.Targeting;
 using Server.Engines.CannedEvil;
 using Server.Network;
-using Server.Gumps;
 using Server.Items;
 
 namespace Server.Multis
 {
-	public abstract class BaseBoatDeed : Item
+    public abstract class BaseBoatDeed : Item, IEasyCraft
 	{
 		private int m_MultiID;
 		private Point3D m_Offset;
-        private Direction m_Direction;
 
 		[CommandProperty( AccessLevel.GameMaster )]
 		public int MultiID{ get{ return m_MultiID; } set{ m_MultiID = value; } }
 
 		[CommandProperty( AccessLevel.GameMaster )]
 		public Point3D Offset{ get{ return m_Offset; } set{ m_Offset = value; } }
-
-        [CommandProperty(AccessLevel.GameMaster)]
-        public Direction BoatDirection { get { return m_Direction; } set { m_Direction = value; } }
 
 		public BaseBoatDeed( int id, Point3D offset ) : base( 0x14F2 )
 		{
@@ -31,9 +26,8 @@ namespace Server.Multis
 			if ( !Core.AOS )
 				LootType = LootType.Newbied;
 
-			m_MultiID = id;
+			m_MultiID = id & 0x3FFF;
 			m_Offset = offset;
-            m_Direction = Direction.North;
 		}
 
 		public BaseBoatDeed( Serial serial ) : base( serial )
@@ -81,29 +75,20 @@ namespace Server.Multis
 			{
 				from.SendLocalizedMessage( 1010567, null, 0x25 ); // You may not place a boat from this location.
 			}
-            else if (IsGalleon() && BaseGalleon.HasGalleon(from) && from.AccessLevel == AccessLevel.Player)
-            {
-                from.SendLocalizedMessage(1116758); //You already have a ship deployed!
-            }
-            else if(!from.HasGump(typeof(BoatPlacementGump)))
-            {
-                if (Core.SE)
-                    from.SendLocalizedMessage(502482); // Where do you wish to place the ship?
-                else
-                    from.LocalOverheadMessage(MessageType.Regular, 0x3B2, 502482); // Where do you wish to place the ship?
+			else
+			{
+				if ( Core.SE )
+					from.SendLocalizedMessage( 502482 ); // Where do you wish to place the ship?
+				else
+					from.LocalOverheadMessage( MessageType.Regular, 0x3B2, 502482 ); // Where do you wish to place the ship?
 
-                from.SendGump(new BoatPlacementGump(this, from));
-            }
+				from.Target = new InternalTarget( this );
+			}
 		}
-
-        public bool IsGalleon()
-        {
-            return this is BritannianShipDeed || this is GargishGalleonDeed || this is TokunoGalleonDeed || this is OrcishGalleonDeed;
-        }
 
 		public abstract BaseBoat Boat{ get; }
 
-		public void OnPlacement( Mobile from, Point3D p, int itemID, Direction d )
+		public void OnPlacement( Mobile from, Point3D p )
 		{
 			if ( Deleted )
 			{
@@ -126,13 +111,12 @@ namespace Server.Multis
 					return;
 				}
 
-				if ( from.Region.IsPartOf( typeof( HouseRegion ) ) || (Server.Multis.BaseBoat.FindBoatAt( from, from.Map ) != null && !(this is RowBoatDeed)) )
+				if ( from.Region.IsPartOf( typeof( HouseRegion ) ) || Server.Multis.BaseBoat.FindBoatAt( from, from.Map ) != null )
 				{
 					from.SendLocalizedMessage( 1010568, null, 0x25 ); // You may not place a ship while on another ship or inside a house.
 					return;
 				}
 
-                m_Direction = d;
 				BaseBoat boat = Boat;
 
 				if ( boat == null )
@@ -140,41 +124,22 @@ namespace Server.Multis
 
 				p = new Point3D( p.X - m_Offset.X, p.Y - m_Offset.Y, p.Z - m_Offset.Z );
 
-				if ( BaseBoat.IsValidLocation( p, map ) && boat.CanFit( p, map, itemID ) )
+				if ( BaseBoat.IsValidLocation( p, map ) && boat.CanFit( p, map, boat.ItemID ) )
 				{
 					Delete();
 
 					boat.Owner = from;
-                    boat.ItemID = itemID;
+					boat.Anchored = true;
 
-                    if (boat is BaseGalleon)
-                    {
-                        ((BaseGalleon)boat).SecurityEntry = new SecurityEntry((BaseGalleon)boat);
-                        ((BaseGalleon)boat).BaseBoatHue = RandomBasePaintHue();
-                    }
+					uint keyValue = boat.CreateKeys( from );
 
-                    if (boat.IsClassicBoat)
-                    {
-                        uint keyValue = boat.CreateKeys(from);
+					if ( boat.PPlank != null )
+						boat.PPlank.KeyValue = keyValue;
 
-                        if (boat.PPlank != null)
-                            boat.PPlank.KeyValue = keyValue;
-
-                        if (boat.SPlank != null)
-                            boat.SPlank.KeyValue = keyValue;
-                    }
+					if ( boat.SPlank != null )
+						boat.SPlank.KeyValue = keyValue;
 
 					boat.MoveToWorld( p, map );
-
-                    var addon = LighthouseAddon.GetLighthouse(from);
-
-                    if (addon != null)
-                    {
-                        if (boat.CanLinkToLighthouse)
-                            from.SendLocalizedMessage(1154592); // You have linked your boat lighthouse.
-                        else
-                            from.SendLocalizedMessage(1154597); // Failed to link to lighthouse.
-                    }
 				}
 				else
 				{
@@ -184,14 +149,36 @@ namespace Server.Multis
 			}
 		}
 
-        private int RandomBasePaintHue()
-        {
-            if (0.6 > Utility.RandomDouble())
-            {
-                return Utility.RandomMinMax(1701, 1754);
-            }
+		private class InternalTarget : MultiTarget
+		{
+			private BaseBoatDeed m_Deed;
 
-            return Utility.RandomMinMax(1801, 1908);
-        }
+			public InternalTarget( BaseBoatDeed deed ) : base( deed.MultiID, deed.Offset )
+			{
+				m_Deed = deed;
+			}
+
+			protected override void OnTarget( Mobile from, object o )
+			{
+				IPoint3D ip = o as IPoint3D;
+
+				if ( ip != null )
+				{
+					if ( ip is Item )
+						ip = ((Item)ip).GetWorldTop();
+
+					Point3D p = new Point3D( ip );
+
+					Region region = Region.Find( p, from.Map );
+
+					if ( region.IsPartOf( typeof( DungeonRegion ) ) )
+						from.SendLocalizedMessage( 502488 ); // You can not place a ship inside a dungeon.
+					else if ( region.IsPartOf( typeof( HouseRegion ) ) || region.IsPartOf( typeof( ChampionSpawnRegion ) ) )
+						from.SendLocalizedMessage( 1042549 ); // A boat may not be placed in this area.
+					else
+						m_Deed.OnPlacement( from, p );
+				}
+			}
+		}
 	}
 }

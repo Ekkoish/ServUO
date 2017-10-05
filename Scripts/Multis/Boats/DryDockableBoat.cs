@@ -4,8 +4,10 @@ using Server.Items;
 
 namespace Server.Multis
 {
-	public class LargeDragonBoat : BaseBoat
+    public class DryDockableBoat : BaseBoat
 	{
+        public override bool CanBeDryDocked() { return true; }
+
 		public override int NorthID{ get{ return 0x4014; } }
 		public override int  EastID{ get{ return 0x4015; } }
 		public override int SouthID{ get{ return 0x4016; } }
@@ -19,14 +21,44 @@ namespace Server.Multis
 
 		public override Point3D MarkOffset{ get{ return new Point3D( 0, 0, 3 ); } }
 
-		public override BaseDockedBoat DockedBoat{ get{ return new LargeDockedDragonBoat( this ); } }
+		public override BaseDockedBoat DockedBoat{ get{ return new DryDockableDockedBoat ( this ); } }
 
 		[Constructable]
-		public LargeDragonBoat()
+		public DryDockableBoat()
 		{
 		}
 
-		public LargeDragonBoat( Serial serial ) : base( serial )
+		public DryDockableBoat( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int)0 );
+		}
+
+	}
+
+	public class DryDockableBoatDeed : BaseBoatDeed
+	{
+		public override int LabelNumber{ get{ return 1041210; } }// magical large dragon ship
+		public override BaseBoat Boat{ get{ return new DryDockableBoat(); } }
+
+		[Constructable]
+		public DryDockableBoatDeed() : base( 0x4014, new Point3D( 0, -1, 0 ) )
+		{
+		}
+
+		public DryDockableBoatDeed( Serial serial ) : base( serial )
 		{
 		}
 
@@ -45,44 +77,15 @@ namespace Server.Multis
 		}
 	}
 
-	public class LargeDragonBoatDeed : BaseBoatDeed
+	public class DryDockableDockedBoat : BaseDockedBoat
 	{
-		public override int LabelNumber{ get{ return 1041210; } }// large dragon ship deed
-		public override BaseBoat Boat{ get{ return new LargeDragonBoat(); } }
+		public override BaseBoat Boat{ get{ return new DryDockableBoat(); } }
 
-		[Constructable]
-		public LargeDragonBoatDeed() : base( 0x4014, new Point3D( 0, -1, 0 ) )
+		public DryDockableDockedBoat( BaseBoat boat ) : base( 0x4014, new Point3D( 0, -1, 0 ), boat )
 		{
 		}
 
-		public LargeDragonBoatDeed( Serial serial ) : base( serial )
-		{
-		}
-
-		public override void Deserialize( GenericReader reader )
-		{
-			base.Deserialize( reader );
-
-			int version = reader.ReadInt();
-		}
-
-		public override void Serialize( GenericWriter writer )
-		{
-			base.Serialize( writer );
-
-			writer.Write( (int)0 );
-		}
-	}
-
-	public class LargeDockedDragonBoat : BaseDockedBoat
-	{
-		public override BaseBoat Boat{ get{ return new LargeDragonBoat(); } }
-
-		public LargeDockedDragonBoat( BaseBoat boat ) : base( 0x4014, new Point3D( 0, -1, 0 ), boat )
-		{
-		}
-
-		public LargeDockedDragonBoat( Serial serial ) : base( serial )
+		public DryDockableDockedBoat( Serial serial ) : base( serial )
 		{
 		}
 

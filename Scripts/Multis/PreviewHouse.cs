@@ -1,192 +1,145 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Server;
 using Server.Items;
 
 namespace Server.Multis
 {
-    public class PreviewHouse : BaseMulti
-    {
-        private List<Item> m_Components;
-        private Timer m_Timer;
-        public PreviewHouse(int multiID)
-            : base(multiID)
-        {
-            this.m_Components = new List<Item>();
+	public class PreviewHouse : BaseMulti
+	{
+		private List<Item> m_Components;
+		private Timer m_Timer;
 
-            MultiComponentList mcl = this.Components;
+		public PreviewHouse( int multiID ) : base( multiID | 0x4000 )
+		{
+			m_Components = new List<Item>();
 
-            for (int i = 1; i < mcl.List.Length; ++i)
-            {
-                MultiTileEntry entry = mcl.List[i];
+			MultiComponentList mcl = this.Components;
 
-                if (entry.m_Flags == 0)
-                {
-                    Item item = new Static((int)entry.m_ItemID);
+			for ( int i = 1; i < mcl.List.Length; ++i )
+			{
+				MultiTileEntry entry = mcl.List[i];
 
-                    item.MoveToWorld(new Point3D(this.X + entry.m_OffsetX, this.Y + entry.m_OffsetY, this.Z + entry.m_OffsetZ), this.Map);
+				if ( entry.m_Flags == 0 )
+				{
+					Item item = new Static( entry.m_ItemID & 0x3FFF );
 
-                    this.m_Components.Add(item);
-                }
-            }
+					item.MoveToWorld( new Point3D( X + entry.m_OffsetX, Y + entry.m_OffsetY, Z + entry.m_OffsetZ ), Map );
 
-            if (multiID >= 0x13ec && multiID <= 0x147b)
-            {
-                AddSignAndPost(mcl);
-                AddExteriorStairs(mcl);
-            }
+					m_Components.Add( item );
+				}
+			}
 
-            this.m_Timer = new DecayTimer(this);
-            this.m_Timer.Start();
-        }
+			m_Timer = new DecayTimer( this );
+			m_Timer.Start();
+		}
 
-        public void AddSignAndPost(MultiComponentList mcl)
-        {
-            int xoffset = mcl.Min.X;
-            int y = mcl.Height - 1 - mcl.Center.Y;
+		public override void OnLocationChange( Point3D oldLocation )
+		{
+			base.OnLocationChange( oldLocation );
 
-            Item signpost = new Static((int)9);
-            signpost.MoveToWorld(new Point3D(X + xoffset, Y + y, Z + 7), this.Map);
-            this.m_Components.Add(signpost);
+			if ( m_Components == null )
+				return;
 
+			int xOffset = X - oldLocation.X;
+			int yOffset = Y - oldLocation.Y;
+			int zOffset = Z - oldLocation.Z;
 
-            xoffset = Components.Min.X;
-            y = Components.Height - Components.Center.Y;
+			for ( int i = 0; i < m_Components.Count; ++i )
+			{
+				Item item = m_Components[i];
 
-            Item signhanger = new Static((int)0xB98);
-            signhanger.MoveToWorld(new Point3D(X + xoffset, Y + y, Z + 7), this.Map);
-            this.m_Components.Add(signhanger);
+				item.MoveToWorld( new Point3D( item.X + xOffset, item.Y + yOffset, item.Z + zOffset ), this.Map );
+			}
+		}
 
-            Item housesign = new Static((int)0xBD2);
-            housesign.MoveToWorld(new Point3D(X + xoffset, Y + y, Z + 7), this.Map);
-            this.m_Components.Add(housesign);
-        }
+		public override void OnMapChange()
+		{
+			base.OnMapChange();
 
-        public void AddExteriorStairs(MultiComponentList mcl)
-        {
-            // this won't work correctly without declaring a new mcl so it can then be resized
-            MultiComponentList mclNew = new MultiComponentList(MultiData.GetComponents(ItemID));
+			if ( m_Components == null )
+				return;
 
-            mclNew.Resize(mclNew.Width, mclNew.Height + 1);
+			for ( int i = 0; i < m_Components.Count; ++i )
+			{
+				Item item = m_Components[i];
 
-            int xCenter = mcl.Center.X;
-            int yCenter = mcl.Center.Y;
-            int y = mcl.Height;
+				item.Map = this.Map;
+			}
+		}
 
-            for (int x = 1; x < mclNew.Width; ++x)
-            {
-                Item stair = new Static((int)0x751);
-                stair.MoveToWorld(new Point3D(x - xCenter, y - yCenter, 0), this.Map);
-                this.m_Components.Add(stair);
-            }
-        }
+		public override void OnDelete()
+		{
+			base.OnDelete();
 
+			if ( m_Components == null )
+				return;
 
-        public PreviewHouse(Serial serial)
-            : base(serial)
-        {
-        }
+			for ( int i = 0; i < m_Components.Count; ++i )
+			{
+				Item item = m_Components[i];
 
-        public override void OnLocationChange(Point3D oldLocation)
-        {
-            base.OnLocationChange(oldLocation);
+				item.Delete();
+			}
+		}
 
-            if (this.m_Components == null)
-                return;
+		public override void OnAfterDelete()
+		{
+			if ( m_Timer != null )
+				m_Timer.Stop();
 
-            int xOffset = this.X - oldLocation.X;
-            int yOffset = this.Y - oldLocation.Y;
-            int zOffset = this.Z - oldLocation.Z;
+			m_Timer = null;
 
-            for (int i = 0; i < this.m_Components.Count; ++i)
-            {
-                Item item = this.m_Components[i];
+			base.OnAfterDelete();
+		}
 
-                item.MoveToWorld(new Point3D(item.X + xOffset, item.Y + yOffset, item.Z + zOffset), this.Map);
-            }
-        }
+		public PreviewHouse( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void OnMapChange()
-        {
-            base.OnMapChange();
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            if (this.m_Components == null)
-                return;
+			writer.Write( (int) 0 ); // version
 
-            for (int i = 0; i < this.m_Components.Count; ++i)
-            {
-                Item item = this.m_Components[i];
+			writer.Write( m_Components );
+		}
 
-                item.Map = this.Map;
-            }
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override void OnDelete()
-        {
-            base.OnDelete();
+			int version = reader.ReadInt();
 
-            if (this.m_Components == null)
-                return;
+			switch ( version )
+			{
+				case 0:
+				{
+					m_Components = reader.ReadStrongItemList();
 
-            for (int i = 0; i < this.m_Components.Count; ++i)
-            {
-                Item item = this.m_Components[i];
+					break;
+				}
+			}
 
-                item.Delete();
-            }
-        }
+			Delete();
+		}
 
-        public override void OnAfterDelete()
-        {
-            if (this.m_Timer != null)
-                this.m_Timer.Stop();
+		private class DecayTimer : Timer
+		{
+			private Item m_Item;
 
-            this.m_Timer = null;
+			public DecayTimer( Item item ) : base( TimeSpan.FromSeconds( 20.0 ) )
+			{
+				m_Item = item;
+				Priority = TimerPriority.OneSecond;
+			}
 
-            base.OnAfterDelete();
-        }
-
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
-
-            writer.Write((int)0); // version
-
-            writer.Write(this.m_Components);
-        }
-
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
-
-            int version = reader.ReadInt();
-
-            switch ( version )
-            {
-                case 0:
-                    {
-                        this.m_Components = reader.ReadStrongItemList();
-
-                        break;
-                    }
-            }
-
-            Timer.DelayCall(TimeSpan.Zero, new TimerCallback(this.Delete));
-        }
-
-        private class DecayTimer : Timer
-        {
-            private readonly Item m_Item;
-            public DecayTimer(Item item)
-                : base(TimeSpan.FromSeconds(20.0))
-            {
-                this.m_Item = item;
-                this.Priority = TimerPriority.OneSecond;
-            }
-
-            protected override void OnTick()
-            {
-                this.m_Item.Delete();
-            }
-        }
-    }
+			protected override void OnTick()
+			{
+				m_Item.Delete();
+			}
+		}
+	}
 }

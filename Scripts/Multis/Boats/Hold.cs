@@ -7,23 +7,24 @@ namespace Server.Items
 {
 	public class Hold : Container
 	{
+		public override int MaxWeight
+		{ 
+			get
+			{
+				if( m_Boat != null )
+				{
+					if( m_Boat is LargeBoat || m_Boat is LargeDragonBoat )
+						return 25000;
+					
+					if( m_Boat is MediumBoat || m_Boat is MediumDragonBoat )
+						return 20000;
+				}
+				
+				return 15000; 
+			} 
+		}
+		
 		private BaseBoat m_Boat;
-
-        [CommandProperty(AccessLevel.GameMaster)]
-        public BaseBoat Boat { get { return m_Boat; } }
-
-		public override int DefaultMaxWeight{ get{
-            if (m_Boat == null || m_Boat.Deleted)
-                return 400;
-            else if (m_Boat is LargeBoat || m_Boat is LargeDragonBoat)
-                return 2000;
-            else if (m_Boat is MediumBoat || m_Boat is MediumDragonBoat)
-                return 1600;
-            else if (m_Boat is SmallBoat || m_Boat is SmallDragonBoat)
-                return 1200;
-            else
-                return 400;
-		} }
 
 		public Hold( BaseBoat boat ) : base( 0x3EAE )
 		{
@@ -35,7 +36,7 @@ namespace Server.Items
 		{
 		}
 
-		public virtual void SetFacing( Direction dir )
+		public void SetFacing( Direction dir )
 		{
 			switch ( dir )
 			{
@@ -54,12 +55,12 @@ namespace Server.Items
 			return base.OnDragDrop( from, item );
 		}
 
-		public override bool OnDragDropInto( Mobile from, Item item, Point3D p)
+		public override bool OnDragDropInto( Mobile from, Item item, Point3D p )
 		{
 			if ( m_Boat == null || !m_Boat.Contains( from ) || m_Boat.IsMoving )
 				return false;
 
-			return base.OnDragDropInto( from, item, p);
+			return base.OnDragDropInto( from, item, p );
 		}
 
 		public override bool CheckItemUse( Mobile from, Item item )
@@ -89,15 +90,17 @@ namespace Server.Items
 			if ( m_Boat == null || !m_Boat.Contains( from ) )
 			{
 				if ( m_Boat.TillerMan != null )
-					m_Boat.TillerManSay( 502490 ); // You must be on the ship to open the hold.
+					m_Boat.TillerMan.Say( 502490 ); // You must be on the ship to open the hold.
 			}
-			else if ( m_Boat.IsMoving && m_Boat.IsClassicBoat )
+			else if ( m_Boat.IsMoving )
 			{
 				if ( m_Boat.TillerMan != null )
-					m_Boat.TillerManSay( 502491 ); // I can not open the hold while the ship is moving.
+					m_Boat.TillerMan.Say( 502491 ); // I can not open the hold while the ship is moving.
 			}
 			else
+			{
 				base.OnDoubleClick( from );
+			}
 		}
 
 		public override bool IsDecoContainer

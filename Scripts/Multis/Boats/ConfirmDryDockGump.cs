@@ -8,13 +8,11 @@ namespace Server.Multis
 	public class ConfirmDryDockGump : Gump
 	{
 		private Mobile m_From;
-        private Mobile m_Dockmaster;
 		private BaseBoat m_Boat;
 
-		public ConfirmDryDockGump( Mobile from, BaseBoat boat, Mobile dockmaster ) : base( 150, 200 )
+		public ConfirmDryDockGump( Mobile from, BaseBoat boat ) : base( 150, 200 )
 		{
 			m_From = from;
-            m_Dockmaster = dockmaster;
 			m_Boat = boat;
 
 			m_From.CloseGump( typeof( ConfirmDryDockGump ) );
@@ -24,12 +22,7 @@ namespace Server.Multis
 			AddBackground( 0, 0, 220, 170, 5054 );
 			AddBackground( 10, 10, 200, 150, 3000 );
 
-            bool needsWarning = boat is BaseGalleon && ((BaseGalleon)boat).HasPaint;
-
-            //if (needsWarning)
-            //    AddHtml(20, 20, 180, 80, "Do you wish to dry dock this boat?<br>WARNING: You will lose any non-permanent boat paint applied to your galleon.", true, true);
-            //else
-            AddHtmlLocalized(20, 20, 180, 80, 1018319, true, needsWarning); // Do you wish to dry dock this boat?
+			AddHtmlLocalized( 20, 20, 180, 80, 1018319, true, false ); // Do you wish to dry dock this boat?
 
 			AddHtmlLocalized( 55, 100, 140, 25, 1011011, false, false ); // CONTINUE
 			AddButton( 20, 100, 4005, 4007, 2, GumpButtonType.Reply, 0 );
@@ -39,9 +32,9 @@ namespace Server.Multis
 		}
 
 		public override void OnResponse( NetState state, RelayInfo info )
-		{
-			if ( info.ButtonID == 2 )
-				m_Boat.EndDryDock( m_From, m_Dockmaster );
-		}
+        {
+            if (info.ButtonID == 2)
+                m_Boat.EndDryDock(m_From);
+        }
 	}
 }

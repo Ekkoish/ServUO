@@ -6,10 +6,10 @@ namespace Server.Multis
 {
 	public class MediumDragonBoat : BaseBoat
 	{
-		public override int NorthID{ get{ return 0xC; } }
-		public override int  EastID{ get{ return 0xD; } }
-		public override int SouthID{ get{ return 0xE; } }
-		public override int  WestID{ get{ return 0xF; } }
+		public override int NorthID{ get{ return 0x400C; } }
+		public override int  EastID{ get{ return 0x400D; } }
+		public override int SouthID{ get{ return 0x400E; } }
+		public override int  WestID{ get{ return 0x400F; } }
 
 		public override int HoldDistance{ get{ return 4; } }
 		public override int TillerManDistance{ get{ return -5; } }
@@ -22,7 +22,7 @@ namespace Server.Multis
 		public override BaseDockedBoat DockedBoat{ get{ return new MediumDockedDragonBoat( this ); } }
 
 		[Constructable]
-		public MediumDragonBoat(Direction d) : base(d, true)
+		public MediumDragonBoat()
 		{
 		}
 
@@ -48,10 +48,10 @@ namespace Server.Multis
 	public class MediumDragonBoatDeed : BaseBoatDeed
 	{
 		public override int LabelNumber{ get{ return 1041208; } } // medium dragon ship deed
-        public override BaseBoat Boat { get { return new MediumDragonBoat(this.BoatDirection); } }
+		public override BaseBoat Boat{ get{ return new MediumDragonBoat(); } }
 
 		[Constructable]
-		public MediumDragonBoatDeed() : base( 0xC, Point3D.Zero )
+		public MediumDragonBoatDeed() : base( 0x400C, Point3D.Zero )
 		{
 		}
 
@@ -76,10 +76,9 @@ namespace Server.Multis
 
 	public class MediumDockedDragonBoat : BaseDockedBoat
 	{
-        public override int LabelNumber { get { return 1116744; } } //Medium Dragon Ship
-        public override BaseBoat Boat { get { return new MediumDragonBoat(this.BoatDirection); } }
+		public override BaseBoat Boat{ get{ return new MediumDragonBoat(); } }
 
-		public MediumDockedDragonBoat( BaseBoat boat ) : base( 0xC, Point3D.Zero, boat )
+		public MediumDockedDragonBoat( BaseBoat boat ) : base( 0x400C, Point3D.Zero, boat )
 		{
 		}
 

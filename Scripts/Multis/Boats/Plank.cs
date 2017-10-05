@@ -1,10 +1,7 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Server;
 using Server.Multis;
-using Server.ContextMenus;
-
 
 namespace Server.Items
 {
@@ -123,16 +120,9 @@ namespace Server.Items
 
 			if ( m_CloseTimer != null )
 				m_CloseTimer.Stop();
-				
-			//Roadkill change to leave unlocked planks open
-			//m_CloseTimer = new CloseTimer( this );
-			//m_CloseTimer.Start();			
-			if ( Locked )
-			{
-				m_CloseTimer = new CloseTimer( this );
-				m_CloseTimer.Start();
-			}
-			// end or RK change				
+
+			m_CloseTimer = new CloseTimer( this );
+			m_CloseTimer.Start();
 
 			switch ( ItemID )
 			{
@@ -141,9 +131,6 @@ namespace Server.Items
 				case 0x3EB2: ItemID = 0x3ED4; break;
 				case 0x3E85: ItemID = 0x3E84; break;
 			}
-
-			if ( m_Boat != null )
-				m_Boat.Refresh();
 		}
 
 		public override bool OnMoveOver( Mobile from )
@@ -216,16 +203,12 @@ namespace Server.Items
 			if ( map == null || Deleted )
 				return false;
 
-            IPooledEnumerable eable = this.GetObjectsInRange(0);
-			foreach ( object o in eable )
+			foreach ( object o in this.GetObjectsInRange( 0 ) )
 			{
-                if (o != this)
-                {
-                    eable.Free();
-                    return false;
-                }
+				if ( o != this )
+					return false;
 			}
-            eable.Free();
+
 			return true;
 		}
 
@@ -245,35 +228,6 @@ namespace Server.Items
 				case 0x3E89: ItemID = 0x3E8A; break;
 				case 0x3ED4: ItemID = 0x3EB2; break;
 				case 0x3E84: ItemID = 0x3E85; break;
-			}
-
-			if ( m_Boat != null )
-				m_Boat.Refresh();
-		}
-
-		public override void GetContextMenuEntries( Mobile from, List<ContextMenuEntry> list )
-		{
-			base.GetContextMenuEntries( from, list );
-			if ( !from.Alive && m_Boat.Contains(from))
-			{
-				list.Add( new PlanksContext(from, this));
-			}
-		}
-
-		public class PlanksContext : ContextMenuEntry
-		{
-			private Plank m_Plank;
-			private Mobile m_From;
-			
-            public PlanksContext(Mobile from, Plank plank ): base(6132, 10)
-			{
-				m_Plank = plank;
-				m_From = from;
-			}
-
-			public override void OnClick()
-			{
-				m_Plank.OnDoubleClick( m_From );
 			}
 		}
 
