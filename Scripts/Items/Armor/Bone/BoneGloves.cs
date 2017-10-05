@@ -3,12 +3,12 @@ using Server.Items;
 
 namespace Server.Items
 {
-    [FlipableAttribute(0x144e, 0x1453)]
-    public class BoneArms : BaseArmor, IBoneArmour
+    [FlipableAttribute(0x1450, 0x1455)]
+    public class BoneGloves : BaseArmor, IBoneArmour
     {
-        public override int BaseBluntResistance { get { return 8; } }
-        public override int BasePiercingResistance { get { return 5; } }
-        public override int BaseSlashingResistance { get { return 7; } }
+        public override int BaseBluntResistance { get { return 3; } }
+        public override int BasePiercingResistance { get { return 2; } }
+        public override int BaseSlashingResistance { get { return 2; } }
         public override int BasePhysicalResistance { get { return 0; } }
         public override int BaseFireResistance { get { return 3; } }
         public override int BaseColdResistance { get { return 4; } }
@@ -21,23 +21,23 @@ namespace Server.Items
         public override int AosStrReq { get { return 55; } }
         public override int OldStrReq { get { return 40; } }
 
-        public override int OldDexBonus { get { return -2; } }
+        public override int OldDexBonus { get { return -1; } }
 
         public override int ArmorBase { get { return 30; } }
-        public override int RevertArmorBase { get { return 4; } }
+        public override int RevertArmorBase { get { return 2; } }
 
         public override ArmorMaterialType MaterialType { get { return ArmorMaterialType.Bone; } }
         public override CraftResource DefaultResource { get { return CraftResource.RegularLeather; } }
 
         [Constructable]
-        public BoneArms()
-            : base(0x144E)
+        public BoneGloves()
+            : base(0x1450)
         {
             Weight = 2.0;
-            Name = "bone Arms";
+            Name = "bone Gloves";
         }
 
-        public BoneArms(Serial serial)
+        public BoneGloves(Serial serial)
             : base(serial)
         {
         }

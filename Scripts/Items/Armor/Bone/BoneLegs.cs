@@ -3,12 +3,12 @@ using Server.Items;
 
 namespace Server.Items
 {
-    [FlipableAttribute(0x144e, 0x1453)]
-    public class BoneArms : BaseArmor, IBoneArmour
+    [FlipableAttribute(0x1452, 0x1457)]
+    public class BoneLegs : BaseArmor, IBoneArmour
     {
-        public override int BaseBluntResistance { get { return 8; } }
-        public override int BasePiercingResistance { get { return 5; } }
-        public override int BaseSlashingResistance { get { return 7; } }
+        public override int BaseBluntResistance { get { return 9; } }
+        public override int BasePiercingResistance { get { return 6; } }
+        public override int BaseSlashingResistance { get { return 6; } }
         public override int BasePhysicalResistance { get { return 0; } }
         public override int BaseFireResistance { get { return 3; } }
         public override int BaseColdResistance { get { return 4; } }
@@ -21,23 +21,23 @@ namespace Server.Items
         public override int AosStrReq { get { return 55; } }
         public override int OldStrReq { get { return 40; } }
 
-        public override int OldDexBonus { get { return -2; } }
+        public override int OldDexBonus { get { return -4; } }
 
         public override int ArmorBase { get { return 30; } }
-        public override int RevertArmorBase { get { return 4; } }
+        public override int RevertArmorBase { get { return 7; } }
 
         public override ArmorMaterialType MaterialType { get { return ArmorMaterialType.Bone; } }
         public override CraftResource DefaultResource { get { return CraftResource.RegularLeather; } }
 
         [Constructable]
-        public BoneArms()
-            : base(0x144E)
+        public BoneLegs()
+            : base(0x1452)
         {
-            Weight = 2.0;
-            Name = "bone Arms";
+            Weight = 3.0;
+            Name = "bone Legs";
         }
 
-        public BoneArms(Serial serial)
+        public BoneLegs(Serial serial)
             : base(serial)
         {
         }
@@ -46,9 +46,6 @@ namespace Server.Items
         {
             base.Serialize(writer);
             writer.Write((int)0);
-
-            if (Weight == 1.0)
-                Weight = 2.0;
         }
 
         public override void Deserialize(GenericReader reader)

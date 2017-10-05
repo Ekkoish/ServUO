@@ -3,12 +3,16 @@ using Server.Items;
 
 namespace Server.Items
 {
-    [FlipableAttribute(0x144e, 0x1453)]
-    public class BoneArms : BaseArmor, IBoneArmour
+    public interface IBoneArmour
     {
-        public override int BaseBluntResistance { get { return 8; } }
-        public override int BasePiercingResistance { get { return 5; } }
-        public override int BaseSlashingResistance { get { return 7; } }
+    }
+
+    [FlipableAttribute(0x144f, 0x1454)]
+    public class BoneChest : BaseArmor, IBoneArmour
+    {
+        public override int BaseBluntResistance { get { return 16; } }
+        public override int BasePiercingResistance { get { return 14; } }
+        public override int BaseSlashingResistance { get { return 15; } }
         public override int BasePhysicalResistance { get { return 0; } }
         public override int BaseFireResistance { get { return 3; } }
         public override int BaseColdResistance { get { return 4; } }
@@ -18,26 +22,26 @@ namespace Server.Items
         public override int InitMinHits { get { return 25; } }
         public override int InitMaxHits { get { return 30; } }
 
-        public override int AosStrReq { get { return 55; } }
+        public override int AosStrReq { get { return 60; } }
         public override int OldStrReq { get { return 40; } }
 
-        public override int OldDexBonus { get { return -2; } }
+        public override int OldDexBonus { get { return -6; } }
 
         public override int ArmorBase { get { return 30; } }
-        public override int RevertArmorBase { get { return 4; } }
+        public override int RevertArmorBase { get { return 11; } }
 
         public override ArmorMaterialType MaterialType { get { return ArmorMaterialType.Bone; } }
         public override CraftResource DefaultResource { get { return CraftResource.RegularLeather; } }
 
         [Constructable]
-        public BoneArms()
-            : base(0x144E)
+        public BoneChest()
+            : base(0x144F)
         {
-            Weight = 2.0;
-            Name = "bone Arms";
+            Weight = 6.0;
+            Name = "bone Chest";
         }
 
-        public BoneArms(Serial serial)
+        public BoneChest(Serial serial)
             : base(serial)
         {
         }
@@ -48,7 +52,7 @@ namespace Server.Items
             writer.Write((int)0);
 
             if (Weight == 1.0)
-                Weight = 2.0;
+                Weight = 6.0;
         }
 
         public override void Deserialize(GenericReader reader)
