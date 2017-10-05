@@ -1,41 +1,54 @@
+/***************************************************************************
+ *                            DualSaveStrategy.cs
+ *                            -------------------
+ *   begin                : May 1, 2002
+ *   copyright            : (C) The RunUO Software Team
+ *   email                : info@runuo.com
+ *
+ *   $Id: DualSaveStrategy.cs 4 2006-06-15 04:28:39Z mark $
+ *
+ ***************************************************************************/
+
+/***************************************************************************
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ ***************************************************************************/
+
 using System;
+using System.Collections.Generic;
+using System.Text;
+using System.IO;
 using System.Threading;
+using System.Diagnostics;
 
-namespace Server
-{
-    public sealed class DualSaveStrategy : StandardSaveStrategy
-    {
-        public DualSaveStrategy()
-        {
-        }
+using Server;
+using Server.Guilds;
 
-        public override string Name
-        {
-            get
-            {
-                return "Dual";
-            }
-        }
-        public override void Save(SaveMetrics metrics, bool permitBackgroundWrite) 
-        {
-            this.PermitBackgroundWrite = permitBackgroundWrite;
+namespace Server {
+	public sealed class DualSaveStrategy : StandardSaveStrategy {
+		public override string Name {
+			get { return "Dual"; }
+		}
 
-            Thread saveThread = new Thread(delegate()
-            {
-                this.SaveItems(metrics);
-            });
+		public DualSaveStrategy() {
+		}
 
-            saveThread.Name = "Item Save Subset";
-            saveThread.Start();
+		public override void Save( SaveMetrics metrics ) {
+			Thread saveThread = new Thread( delegate() {
+				SaveItems( metrics );
+			} );
 
-            this.SaveMobiles(metrics);
-            this.SaveGuilds(metrics);
-            this.SaveData(metrics);
+			saveThread.Name = "Item Save Subset";
+			saveThread.Start();
 
-            saveThread.Join();
+			SaveMobiles( metrics );
+			SaveGuilds( metrics );
 
-            if (permitBackgroundWrite && this.UseSequentialWriters)	//If we're permitted to write in the background, but we don't anyways, then notify.
-                World.NotifyDiskWriteComplete();
-        }
-    }
+			saveThread.Join();
+		}
+	}
 }
