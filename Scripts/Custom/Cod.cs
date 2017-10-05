@@ -3,27 +3,26 @@ using Server.Network;
 using Server.Targeting;
 
 namespace Server.Items
-	{
-
-	public class Bass : Item, ICarvable
+{
+	public class Cod : Item, ICarvable
 	{
 		public void Carve ( Mobile from, Item item)
 		{
 			base.ScissorHelper(from, new RawFishSteak(), 4 );
 			}
 			[Constructable]
-			public Bass() : this (1)
+			public Cod() : this (1)
 			{
 			}
 			[Constructable]
-			public Bass( int amount) : base (0x3b00)
+			public Cod( int amount) : base (0x3b0A)
 			{
 				Stackable = true;
 				Weight = 1.0;
 				Amount = amount;
-				Name= "Bass";
+				Name= "Cod";
 			}
-			public Bass ( Serial serial) : base (serial)
+			public Cod ( Serial serial) : base (serial)
 			{
 			}
 			
@@ -40,5 +39,5 @@ namespace Server.Items
 				int version = reader.ReadInt();
 			}
 		}
-}
 	
+	}
