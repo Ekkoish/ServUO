@@ -4,17 +4,17 @@ using Server.Network;
 
 namespace Server.Items
 {
-	[FlipableAttribute( 0x1B09, 0x1B10 )]
-	public class BonePile : Item, IScissorable
+	[FlipableAttribute( 0x1B17, 0x1B18 )]
+	public class RibCage : Item, IScissorable
 	{
 		[Constructable]
-		public BonePile( ) : base( 0x1B09 + Utility.Random( 8 ) )
+		public RibCage() : base( 0x1B17 + Utility.Random( 2 ) )
 		{
 			Stackable = false;
-			Weight = 10.0;
+			Weight = 5.0;
 		}
 
-		public BonePile( Serial serial ) : base( serial )
+		public RibCage( Serial serial ) : base( serial )
 		{
 		}
 
@@ -37,7 +37,7 @@ namespace Server.Items
 			if ( Deleted || !from.CanSee( this ) )
 				return false;
 
-			base.ScissorHelper( from, new Bone(), Utility.RandomMinMax( 10, 15 ) );
+			base.ScissorHelper( from, new Bone(), Utility.RandomMinMax( 3, 5 ) );
 
 			return true;
 		}
