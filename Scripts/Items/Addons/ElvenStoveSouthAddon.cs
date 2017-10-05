@@ -1,80 +1,63 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class ElvenStoveSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public ElvenStoveSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x2DDC), 0, 0, 0);
-        }
+	public class ElvenStoveSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new ElvenStoveSouthDeed(); } }
 
-        public ElvenStoveSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public ElvenStoveSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x2DDC ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new ElvenStoveSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public ElvenStoveSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class ElvenStoveSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public ElvenStoveSouthDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public ElvenStoveSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class ElvenStoveSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new ElvenStoveSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1073394; } } // elven oven (south)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new ElvenStoveSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1073394;
-            }
-        }// elven oven (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public ElvenStoveSouthDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public ElvenStoveSouthDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

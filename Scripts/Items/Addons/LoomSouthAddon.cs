@@ -1,104 +1,91 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class LoomSouthAddon : BaseAddon, ILoom
-    {
-        private int m_Phase;
-        [Constructable]
-        public LoomSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x1061), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0x1062), 1, 0, 0);
-        }
+	public class LoomSouthAddon : BaseAddon, ILoom
+	{
+		public override BaseAddonDeed Deed{ get{ return new LoomSouthDeed(); } }
 
-        public LoomSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		private int m_Phase;
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new LoomSouthDeed();
-            }
-        }
-        public int Phase
-        {
-            get
-            {
-                return this.m_Phase;
-            }
-            set
-            {
-                this.m_Phase = value;
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public int Phase{ get{ return m_Phase; } set{ m_Phase = value; } }
+		
+		private int m_LastHue;
 
-            writer.Write((int)1); // version
+		public int LastHue{ get{ return m_LastHue; } set{ m_LastHue = value; } }
 
-            writer.Write((int)this.m_Phase);
-        }
+		[Constructable]
+		public LoomSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x1061 ), 0, 0, 0 );
+			AddComponent( new AddonComponent( 0x1062 ), 1, 0, 0 );
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public LoomSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadInt();
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            switch ( version )
-            {
-                case 1:
-                    {
-                        this.m_Phase = reader.ReadInt();
-                        break;
-                    }
-            }
-        }
-    }
+			writer.Write( (int) 2 ); // version
 
-    public class LoomSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public LoomSouthDeed()
-        {
-        }
+			writer.Write( (int) m_Phase );
+			
+			writer.Write( (int) m_LastHue );
+		}
 
-        public LoomSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new LoomSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044344;
-            }
-        }// loom (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			int version = reader.ReadInt();
 
-            writer.Write((int)0); // version
-        }
+			switch ( version )
+			{
+				case 2:
+				{
+					m_LastHue = reader.ReadInt();
+					goto case 1;
+				}
+					
+				case 1:
+				{
+					m_Phase = reader.ReadInt();
+					break;
+				}
+			}
+		}
+	}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+	public class LoomSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new LoomSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1044344; } } // loom (south)
 
-            int version = reader.ReadInt();
-        }
-    }
+		[Constructable]
+		public LoomSouthDeed()
+		{
+		}
+
+		public LoomSouthDeed( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

@@ -1,81 +1,64 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class ElvenLoveseatEastAddon : BaseAddon
-    {
-        [Constructable]
-        public ElvenLoveseatEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x3089), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0x3088), 1, 0, 0);
-        }
+	public class SouthernBenchEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new SouthernBenchEastDeed(); } }
 
-        public ElvenLoveseatEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public SouthernBenchEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x3089 ), 0, 0, 0 );
+			AddComponent( new AddonComponent( 0x3088 ), 1, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new ElvenLoveseatEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public SouthernBenchEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class ElvenLoveseatEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public ElvenLoveseatEastDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public ElvenLoveseatEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class SouthernBenchEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new SouthernBenchEastAddon(); } }
+		public override int LabelNumber{ get{ return 1073372; } } // elven loveseat (east)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new ElvenLoveseatEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1073372;
-            }
-        }// elven loveseat (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public SouthernBenchEastDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public SouthernBenchEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

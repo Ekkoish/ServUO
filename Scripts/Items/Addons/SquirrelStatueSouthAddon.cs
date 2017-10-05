@@ -1,80 +1,63 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class SquirrelStatueSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public SquirrelStatueSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x2D11), 0, 0, 0);
-        }
+	public class SquirrelStatueSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new SquirrelStatueSouthDeed(); } }
 
-        public SquirrelStatueSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public SquirrelStatueSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x2D11 ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new SquirrelStatueSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public SquirrelStatueSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class SquirrelStatueSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public SquirrelStatueSouthDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public SquirrelStatueSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class SquirrelStatueSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new SquirrelStatueSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1072884; } } // squirrel statue (south)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new SquirrelStatueSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1072884;
-            }
-        }// squirrel statue (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public SquirrelStatueSouthDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public SquirrelStatueSouthDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

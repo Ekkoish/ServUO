@@ -1,80 +1,63 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class ArcanistStatueEastAddon : BaseAddon
-    {
-        [Constructable]
-        public ArcanistStatueEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x2D0E), 0, 0, 0);
-        }
+	public class ArcanistStatueEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new ArcanistStatueEastDeed(); } }
 
-        public ArcanistStatueEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public ArcanistStatueEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x2D0E ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new ArcanistStatueEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public ArcanistStatueEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class ArcanistStatueEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public ArcanistStatueEastDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public ArcanistStatueEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class ArcanistStatueEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new ArcanistStatueEastAddon(); } }
+		public override int LabelNumber{ get{ return 1072886; } } // arcanist statue (east)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new ArcanistStatueEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1072886;
-            }
-        }// arcanist statue (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public ArcanistStatueEastDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public ArcanistStatueEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

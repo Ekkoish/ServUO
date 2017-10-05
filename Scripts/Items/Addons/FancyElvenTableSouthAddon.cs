@@ -1,82 +1,65 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class FancyElvenTableSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public FancyElvenTableSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x3095), 0, 1, 0);
-            this.AddComponent(new AddonComponent(0x3096), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0x3097), 0, -1, 0);
-        }
+	public class FancySouthernTableSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new FancySouthernTableSouthDeed(); } }
 
-        public FancyElvenTableSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public FancySouthernTableSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x3095 ), 0, 1, 0 );
+			AddComponent( new AddonComponent( 0x3096 ), 0, 0, 0 );
+			AddComponent( new AddonComponent( 0x3097 ), 0, -1, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new FancyElvenTableSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public FancySouthernTableSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class FancyElvenTableSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public FancyElvenTableSouthDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public FancyElvenTableSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class FancySouthernTableSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new FancySouthernTableSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1073385; } } // hardwood table (south)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new FancyElvenTableSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1073385;
-            }
-        }// hardwood table (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public FancySouthernTableSouthDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public FancySouthernTableSouthDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

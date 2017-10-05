@@ -1,109 +1,96 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public interface ILoom
-    {
-        int Phase { get; set; }
-    }
+	public interface ILoom
+	{
+		int Phase{ get; set; }
+		int LastHue{ get; set; }
+	}
 
-    public class LoomEastAddon : BaseAddon, ILoom
-    {
-        private int m_Phase;
-        [Constructable]
-        public LoomEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x1060), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0x105F), 0, 1, 0);
-        }
+	public class LoomEastAddon : BaseAddon, ILoom
+	{
+		public override BaseAddonDeed Deed{ get{ return new LoomEastDeed(); } }
 
-        public LoomEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		private int m_Phase;
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new LoomEastDeed();
-            }
-        }
-        public int Phase
-        {
-            get
-            {
-                return this.m_Phase;
-            }
-            set
-            {
-                this.m_Phase = value;
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public int Phase{ get{ return m_Phase; } set{ m_Phase = value; } }
+		
+		private int m_LastHue;
 
-            writer.Write((int)1); // version
+		public int LastHue{ get{ return m_LastHue; } set{ m_LastHue = value; } }
 
-            writer.Write((int)this.m_Phase);
-        }
+		[Constructable]
+		public LoomEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x1060 ), 0, 0, 0 );
+			AddComponent( new AddonComponent( 0x105F ), 0, 1, 0 );
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public LoomEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadInt();
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            switch ( version )
-            {
-                case 1:
-                    {
-                        this.m_Phase = reader.ReadInt();
-                        break;
-                    }
-            }
-        }
-    }
+			writer.Write( (int) 2 ); // version
 
-    public class LoomEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public LoomEastDeed()
-        {
-        }
+			writer.Write( (int) m_Phase );
+			writer.Write( (int) m_LastHue );
+		}
 
-        public LoomEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new LoomEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044343;
-            }
-        }// loom (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			int version = reader.ReadInt();
 
-            writer.Write((int)0); // version
-        }
+			switch ( version )
+			{
+				case 2:
+				{
+					m_LastHue = reader.ReadInt();
+					goto case 1;
+				}
+					
+				case 1:
+				{
+					m_Phase = reader.ReadInt();
+					break;
+				}
+			}
+		}
+	}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+	public class LoomEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new LoomEastAddon(); } }
+		public override int LabelNumber{ get{ return 1044343; } } // loom (east)
 
-            int version = reader.ReadInt();
-        }
-    }
+		[Constructable]
+		public LoomEastDeed()
+		{
+		}
+
+		public LoomEastDeed( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

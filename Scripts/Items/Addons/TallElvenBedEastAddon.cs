@@ -1,83 +1,66 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class TallElvenBedEastAddon : BaseAddon
-    {
-        [Constructable]
-        public TallElvenBedEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x3054), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0x3053), 1, 0, 0);
-            this.AddComponent(new AddonComponent(0x3055), 2, -1, 0);
-            this.AddComponent(new AddonComponent(0x3052), 2, 0, 0);
-        }
+	public class TallSouthernBedEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new TallSouthernBedEastDeed(); } }
 
-        public TallElvenBedEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public TallSouthernBedEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x3054 ), 0,  0, 0 );
+			AddComponent( new AddonComponent( 0x3053 ), 1,  0, 0 );
+			AddComponent( new AddonComponent( 0x3055 ), 2, -1, 0 );
+			AddComponent( new AddonComponent( 0x3052 ), 2,  0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new TallElvenBedEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public TallSouthernBedEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class TallElvenBedEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public TallElvenBedEastDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public TallElvenBedEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class TallSouthernBedEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new TallSouthernBedEastAddon(); } }
+		public override int LabelNumber{ get{ return 1072859; } } // tall elven bed (east)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new TallElvenBedEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1072859;
-            }
-        }// tall elven bed (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public TallSouthernBedEastDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public TallSouthernBedEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

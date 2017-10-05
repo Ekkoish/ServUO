@@ -1,182 +1,157 @@
 using System;
-using Server.Engines.Craft;
-using Server.Multis;
+using System.Collections;
+using Server;
 using Server.Targeting;
 
 namespace Server.Items
 {
-    [Flipable(0x14F0, 0x14EF)]
-    public abstract class BaseAddonDeed : Item, ICraftable
-    {
-        private CraftResource m_Resource;
+	[Flipable( 0x14F0, 0x14EF )]
+	public abstract class BaseAddonDeed : Item
+	{
+		public abstract BaseAddon Addon{ get; }
 
-        public BaseAddonDeed()
-            : base(0x14F0)
-        {
-            Weight = 1.0;
+		public BaseAddonDeed() : base( 0x14F0 )
+		{
+			Weight = 1.0;
 
-            if (!Core.AOS)
-                LootType = LootType.Newbied;
-        }
+			if ( !Core.AOS )
+				LootType = LootType.Newbied;
+		}
 
-        public BaseAddonDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public BaseAddonDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public abstract BaseAddon Addon { get; }
-        public virtual bool UseCraftResource { get { return true; } }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        [CommandProperty(AccessLevel.GameMaster)]
-        public CraftResource Resource
-        {
-            get
-            {
-                return m_Resource;
-            }
-            set
-            {
-                if (UseCraftResource && m_Resource != value)
-                {
-                    m_Resource = value;
-                    Hue = CraftResources.GetHue(m_Resource);
+			writer.Write( (int) 0 ); // version
+		}
 
-                    InvalidateProperties();
-                }
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-            writer.Write(1); // version
+			int version = reader.ReadInt();
 
-            // Version 1
-            writer.Write((int)m_Resource);
-        }
+			if ( Weight == 0.0 )
+				Weight = 1.0;
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( IsChildOf( from.Backpack ) ) {
+				from.SendMessage( "Target a spot on the ground where you wish to place this, or target this deed to change the orientation." );
+				from.Target = new InternalTarget( this );
+			}
+			else
+				from.SendLocalizedMessage( 1042001 ); // That must be in your pack for you to use it.
+		}
 
-            int version = reader.ReadInt();
+		private class InternalTarget : Target
+		{
+			private BaseAddonDeed m_Deed;
 
-            switch (version)
-            {
-                case 1:
-                    {
-                        m_Resource = (CraftResource)reader.ReadInt();
-                        break;
-                    }
-            }
+			public InternalTarget( BaseAddonDeed deed ) : base( -1, true, TargetFlags.None )
+			{
+				m_Deed = deed;
 
-            if (Weight == 0.0)
-                Weight = 1.0;
-        }
+				CheckLOS = false;
+			}
 
-        public override void OnDoubleClick(Mobile from)
-        {
-            if (IsChildOf(from.Backpack))
-                from.Target = new InternalTarget(this);
-            else
-                from.SendLocalizedMessage(1042001); // That must be in your pack for you to use it.
-        }
+			protected override void OnTarget( Mobile from, object targeted )
+			{
+				IPoint3D p = targeted as IPoint3D;
+				Map map = from.Map;
 
-        public virtual void DeleteDeed()
-        {
-            Delete();
-        }
+				if ( p == null || map == null || m_Deed.Deleted )
+					return;
 
-        public override void GetProperties(ObjectPropertyList list)
-        {
-            base.GetProperties(list);
+				if ( m_Deed.IsChildOf( from.Backpack ) )
+				{
+					if ( targeted == m_Deed ) // change direction
+					{
+						string currentType = m_Deed.GetType().FullName;
+						int south = currentType.LastIndexOf( "SouthDeed" );
+						int east = currentType.LastIndexOf( "EastDeed" );
+						string newType;
+						if ( south == -1 && east == -1 )
+						{
+							from.SendMessage( "This does not have any other orientation." );
+							return;
+						}
+						else if ( east != -1 )
+						{
+							newType = currentType.Replace( "EastDeed", "SouthDeed" );
+						}
+						else
+							newType = currentType.Replace( "SouthDeed", "EastDeed" );
+						
+						Type type = Type.GetType( newType );
+						
+						if ( type == null )
+						{
+							from.SendMessage( "This does not have any other orientation." );
+							return;
+						}
+						
+						Item item = Activator.CreateInstance(type) as Item;
+						
+						if ( item == null )
+						{
+							from.SendMessage( "This does not have any other orientation." );
+							return;
+						}
+						
+						m_Deed.Delete();
+						from.Backpack.DropItem( item );
+						return;
+					}
+					else
+					{
+						BaseAddon addon = m_Deed.Addon;
 
-            if (!CraftResources.IsStandard(m_Resource))
-                list.Add(CraftResources.GetLocalizationNumber(m_Resource));
-        }
+						Server.Spells.SpellHelper.GetSurfaceTop( ref p );
 
-        public virtual int OnCraft(int quality, bool makersMark, Mobile from, CraftSystem craftSystem, Type typeRes, BaseTool tool, CraftItem craftItem, int resHue)
-        {
-            Type resourceType = typeRes;
+						ArrayList houses = null;
 
-            if (resourceType == null)
-                resourceType = craftItem.Resources.GetAt(0).ItemType;
+						AddonFitResult res = addon.CouldFit( p, map, from, ref houses );
 
-            Resource = CraftResources.GetFromType(resourceType);
+						if ( res == AddonFitResult.Valid )
+							addon.MoveToWorld( new Point3D( p ), map );
+						else if ( res == AddonFitResult.Blocked )
+							from.SendLocalizedMessage( 500269 ); // You cannot build that there.
+						else if ( res == AddonFitResult.NotInHouse )
+							from.SendLocalizedMessage( 500274 ); // You can only place this in a house that you own!
+						else if ( res == AddonFitResult.DoorsNotClosed )
+							from.SendMessage( "You must close all house doors before placing this." );
+						else if ( res == AddonFitResult.DoorTooClose )
+							from.SendLocalizedMessage( 500271 ); // You cannot build near the door.
+						else if ( res == AddonFitResult.NoWall )
+							res = AddonFitResult.Valid;
+						
+						if ( res == AddonFitResult.Valid )
+						{
+							m_Deed.Delete();
 
-            CraftContext context = craftSystem.GetContext(from);
-
-            if (Hue != 0 && (!UseCraftResource || (context != null && context.DoNotColor)))
-				Hue = 0;
-
-            return quality;
-        }
-
-        private class InternalTarget : Target
-        {
-            private readonly BaseAddonDeed m_Deed;
-            public InternalTarget(BaseAddonDeed deed)
-                : base(-1, true, TargetFlags.None)
-            {
-                m_Deed = deed;
-
-                CheckLOS = false;
-            }
-
-            protected override void OnTarget(Mobile from, object targeted)
-            {
-                IPoint3D p = targeted as IPoint3D;
-                Map map = from.Map;
-
-                if (p == null || map == null || m_Deed.Deleted)
-                    return;
-
-                if (m_Deed.IsChildOf(from.Backpack))
-                {
-                    BaseAddon addon = m_Deed.Addon;
-
-                    Server.Spells.SpellHelper.GetSurfaceTop(ref p);
-
-                    BaseHouse house = null;
-                    BaseGalleon boat = null;
-
-                    AddonFitResult res = addon.CouldFit(p, map, from, ref house, ref boat);
-
-                    if (res == AddonFitResult.Valid)
-                    {
-                        addon.Resource = m_Deed.Resource;
-
-                        if (addon.RetainDeedHue)
-                            addon.Hue = m_Deed.Hue;
-
-                        addon.MoveToWorld(new Point3D(p), map);
-
-                        if (house != null)
-                            house.Addons[addon] = from;
-                        else if (boat != null)
-                            boat.AddAddon(addon);
-
-                        m_Deed.DeleteDeed();
-                    }
-                    else if (res == AddonFitResult.Blocked)
-                        from.SendLocalizedMessage(500269); // You cannot build that there.
-                    else if (res == AddonFitResult.NotInHouse)
-                        from.SendLocalizedMessage(500274); // You can only place this in a house that you own!
-                    else if (res == AddonFitResult.DoorTooClose)
-                        from.SendLocalizedMessage(500271); // You cannot build near the door.
-                    else if (res == AddonFitResult.NoWall)
-                        from.SendLocalizedMessage(500268); // This object needs to be mounted on something.
-					
-                    if (res != AddonFitResult.Valid)
-                    {
-                        addon.Delete();
-                    }
-                }
-                else
-                {
-                    from.SendLocalizedMessage(1042001); // That must be in your pack for you to use it.
-                }
-            }
-        }
-    }
+							if ( houses != null )
+							{
+								foreach ( Server.Multis.BaseHouse h in houses )
+									h.Addons.Add( addon );
+							}
+						}
+						else
+						{
+							addon.Delete();
+						}
+					}
+				}
+				else
+				{
+					from.SendLocalizedMessage( 1042001 ); // That must be in your pack for you to use it.
+				}
+			}
+		}
+	}
 }

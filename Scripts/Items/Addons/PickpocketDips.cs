@@ -1,321 +1,274 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    [Flipable(0x1EC0, 0x1EC3)]
-    public class PickpocketDip : AddonComponent
-    {
-        private double m_MinSkill;
-        private double m_MaxSkill;
-        private Timer m_Timer;
-        public PickpocketDip(int itemID)
-            : base(itemID)
-        {
-            this.m_MinSkill = -25.0;
-            this.m_MaxSkill = +25.0;
-        }
+	[Flipable( 0x1EC0, 0x1EC3 )]
+	public class PickpocketDip : AddonComponent
+	{
+		private double m_MinSkill;
+		private double m_MaxSkill;
 
-        public PickpocketDip(Serial serial)
-            : base(serial)
-        {
-        }
+		private Timer m_Timer;
 
-        [CommandProperty(AccessLevel.GameMaster)]
-        public double MinSkill
-        {
-            get
-            {
-                return this.m_MinSkill;
-            }
-            set
-            {
-                this.m_MinSkill = value;
-            }
-        }
-        [CommandProperty(AccessLevel.GameMaster)]
-        public double MaxSkill
-        {
-            get
-            {
-                return this.m_MaxSkill;
-            }
-            set
-            {
-                this.m_MaxSkill = value;
-            }
-        }
-        [CommandProperty(AccessLevel.GameMaster)]
-        public bool Swinging
-        {
-            get
-            {
-                return (this.m_Timer != null);
-            }
-        }
-        public void UpdateItemID()
-        {
-            int baseItemID = 0x1EC0 + (((this.ItemID - 0x1EC0) / 3) * 3);
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double MinSkill
+		{
+			get{ return m_MinSkill; }
+			set{ m_MinSkill = value; }
+		}
 
-            this.ItemID = baseItemID + (this.Swinging ? 1 : 0);
-        }
+		[CommandProperty( AccessLevel.GameMaster )]
+		public double MaxSkill
+		{
+			get{ return m_MaxSkill; }
+			set{ m_MaxSkill = value; }
+		}
 
-        public void BeginSwing()
-        {
-            if (this.m_Timer != null)
-                this.m_Timer.Stop();
+		[CommandProperty( AccessLevel.GameMaster )]
+		public bool Swinging
+		{
+			get{ return ( m_Timer != null ); } 
+		}
 
-            this.m_Timer = new InternalTimer(this);
-            this.m_Timer.Start();
+		public PickpocketDip( int itemID ) : base( itemID )
+		{
+			m_MinSkill = -25.0;
+			m_MaxSkill = +25.0;
+		}
 
-            this.UpdateItemID();
-        }
+		public void UpdateItemID()
+		{
+			int baseItemID = 0x1EC0 + (((ItemID - 0x1EC0) / 3) * 3);
 
-        public void EndSwing()
-        {
-            if (this.m_Timer != null)
-                this.m_Timer.Stop();
+			ItemID = baseItemID + (Swinging ? 1 : 0);
+		}
 
-            this.m_Timer = null;
+		public void BeginSwing()
+		{
+			if ( m_Timer != null )
+				m_Timer.Stop();
 
-            this.UpdateItemID();
-        }
+			m_Timer = new InternalTimer( this );
+			m_Timer.Start();
 
-        public void Use(Mobile from)
-        {
-            from.Direction = from.GetDirectionTo(this.GetWorldLocation());
+			UpdateItemID();
+		}
 
-            Effects.PlaySound(this.GetWorldLocation(), this.Map, 0x4F);
+		public void EndSwing()
+		{
+			if ( m_Timer != null )
+				m_Timer.Stop();
 
-            if (from.CheckSkill(SkillName.Stealing, this.m_MinSkill, this.m_MaxSkill))
-            {
-                this.SendLocalizedMessageTo(from, 501834); // You successfully avoid disturbing the dip while searching it.
-            }
-            else
-            {
-                Effects.PlaySound(this.GetWorldLocation(), this.Map, 0x390);
+			m_Timer = null;
 
-                this.BeginSwing();
-                this.ProcessDelta();
-                this.SendLocalizedMessageTo(from, 501831); // You carelessly bump the dip and start it swinging.
-            }
-        }
+			UpdateItemID();
+		}
 
-        public override void OnDoubleClick(Mobile from)
-        {
-            if (!from.InRange(this.GetWorldLocation(), 1))
-                this.SendLocalizedMessageTo(from, 501816); // You are too far away to do that.
-            else if (this.Swinging)
-                this.SendLocalizedMessageTo(from, 501815); // You have to wait until it stops swinging.
-            else if (from.Skills[SkillName.Stealing].Base >= this.m_MaxSkill)
-                this.SendLocalizedMessageTo(from, 501830); // Your ability to steal cannot improve any further by simply practicing on a dummy.
-            else if (from.Mounted)
-                this.SendLocalizedMessageTo(from, 501829); // You can't practice on this while on a mount.
-            else
-                this.Use(from);
-        }
+		public void Use( Mobile from )
+		{
+			from.Direction = from.GetDirectionTo( GetWorldLocation() );
 
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			Effects.PlaySound( GetWorldLocation(), Map, 0x4F );
 
-            writer.Write((int)0);
+			if ( from.CheckSkill( SkillName.Stealing, m_MinSkill, m_MaxSkill ) )
+			{
+				SendLocalizedMessageTo( from, 501834 ); // You successfully avoid disturbing the dip while searching it.
+			}
+			else
+			{
+				Effects.PlaySound( GetWorldLocation(), Map, 0x390 );
 
-            writer.Write(this.m_MinSkill);
-            writer.Write(this.m_MaxSkill);
-        }
+				BeginSwing();
+				ProcessDelta();
+				SendLocalizedMessageTo( from, 501831 ); // You carelessly bump the dip and start it swinging.
+			}
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void OnDoubleClick( Mobile from )
+		{
+			if ( !from.InRange( GetWorldLocation(), 1 ) )
+				SendLocalizedMessageTo( from, 501816 ); // You are too far away to do that.
+			else if ( Swinging )
+				SendLocalizedMessageTo( from, 501815 ); // You have to wait until it stops swinging.
+			else if ( from.Skills[SkillName.Stealing].Base >= m_MaxSkill )
+				SendLocalizedMessageTo( from, 501830 ); // Your ability to steal cannot improve any further by simply practicing on a dummy.
+			else if ( from.Mounted )
+				SendLocalizedMessageTo( from, 501829 ); // You can't practice on this while on a mount.
+			else
+				Use( from );
+		}
 
-            int version = reader.ReadInt();
+		public PickpocketDip( Serial serial ) : base( serial )
+		{
+		}
 
-            switch ( version )
-            {
-                case 0:
-                    {
-                        this.m_MinSkill = reader.ReadDouble();
-                        this.m_MaxSkill = reader.ReadDouble();
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-                        if (this.m_MinSkill == 0.0 && this.m_MaxSkill == 30.0)
-                        {
-                            this.m_MinSkill = -25.0;
-                            this.m_MaxSkill = +25.0;
-                        }
+			writer.Write( (int) 0 );
 
-                        break;
-                    }
-            }
+			writer.Write( m_MinSkill );
+			writer.Write( m_MaxSkill );
+		}
 
-            this.UpdateItemID();
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        private class InternalTimer : Timer
-        {
-            private readonly PickpocketDip m_Dip;
-            public InternalTimer(PickpocketDip dip)
-                : base(TimeSpan.FromSeconds(3.0))
-            {
-                this.m_Dip = dip;
-                this.Priority = TimerPriority.FiftyMS;
-            }
+			int version = reader.ReadInt();
 
-            protected override void OnTick()
-            {
-                this.m_Dip.EndSwing();
-            }
-        }
-    }
+			switch ( version )
+			{
+				case 0:
+				{
+					m_MinSkill = reader.ReadDouble();
+					m_MaxSkill = reader.ReadDouble();
 
-    public class PickpocketDipEastAddon : BaseAddon
-    {
-        [Constructable]
-        public PickpocketDipEastAddon()
-        {
-            this.AddComponent(new PickpocketDip(0x1EC3), 0, 0, 0);
-        }
+					if ( m_MinSkill == 0.0 && m_MaxSkill == 30.0 )
+					{
+						m_MinSkill = -25.0;
+						m_MaxSkill = +25.0;
+					}
 
-        public PickpocketDipEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+					break;
+				}
+			}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new PickpocketDipEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			UpdateItemID();
+		}
 
-            writer.Write((int)0); // version
-        }
+		private class InternalTimer : Timer
+		{
+			private PickpocketDip m_Dip;
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			public InternalTimer( PickpocketDip dip ) : base( TimeSpan.FromSeconds( 3.0 ) )
+			{
+				m_Dip = dip;
+				Priority = TimerPriority.FiftyMS;
+			}
 
-            int version = reader.ReadInt();
-        }
-    }
+			protected override void OnTick()
+			{
+				m_Dip.EndSwing();
+			}
+		}
+	}
 
-    public class PickpocketDipEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public PickpocketDipEastDeed()
-        {
-        }
+	public class PickpocketDipEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new PickpocketDipEastDeed(); } }
 
-        public PickpocketDipEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public PickpocketDipEastAddon()
+		{
+			AddComponent( new PickpocketDip( 0x1EC3 ), 0, 0, 0 );
+		}
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new PickpocketDipEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044337;
-            }
-        }// pickpocket dip (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public PickpocketDipEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.Write( (int) 0 ); // version
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class PickpocketDipSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public PickpocketDipSouthAddon()
-        {
-            this.AddComponent(new PickpocketDip(0x1EC0), 0, 0, 0);
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public PickpocketDipSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+	public class PickpocketDipEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new PickpocketDipEastAddon(); } }
+		public override int LabelNumber{ get{ return 1044337; } } // pickpocket dip (east)
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new PickpocketDipSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public PickpocketDipEastDeed()
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public PickpocketDipEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadInt();
-        }
-    }
+			writer.Write( (int) 0 ); // version
+		}
 
-    public class PickpocketDipSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public PickpocketDipSouthDeed()
-        {
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public PickpocketDipSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new PickpocketDipSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044338;
-            }
-        }// pickpocket dip (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+	public class PickpocketDipSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new PickpocketDipSouthDeed(); } }
 
-            writer.Write((int)0); // version
-        }
+		[Constructable]
+		public PickpocketDipSouthAddon()
+		{
+			AddComponent( new PickpocketDip( 0x1EC0 ), 0, 0, 0 );
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public PickpocketDipSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
+
+	public class PickpocketDipSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new PickpocketDipSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1044338; } } // pickpocket dip (south)
+
+		[Constructable]
+		public PickpocketDipSouthDeed()
+		{
+		}
+
+		public PickpocketDipSouthDeed( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

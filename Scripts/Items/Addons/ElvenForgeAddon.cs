@@ -1,80 +1,63 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class ElvenForgeAddon : BaseAddon
-    {
-        [Constructable]
-        public ElvenForgeAddon()
-        {
-            AddComponent(new ForgeComponent(0x2DD8), 0, 0, 0);
-        }
+	public class ElvenForgeAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new ElvenForgeDeed(); } }
 
-        public ElvenForgeAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public ElvenForgeAddon()
+		{
+			AddComponent( new AddonComponent( 0x2DD8 ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new ElvenForgeDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public ElvenForgeAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class ElvenForgeDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public ElvenForgeDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public ElvenForgeDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class ElvenForgeDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new ElvenForgeAddon(); } }
+		public override int LabelNumber{ get{ return 1072875; } } // squirrel statue (east)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new ElvenForgeAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1072875;
-            }
-        }// squirrel statue (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public ElvenForgeDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public ElvenForgeDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

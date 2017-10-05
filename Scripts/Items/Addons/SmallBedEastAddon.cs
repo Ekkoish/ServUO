@@ -1,81 +1,69 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class SmallBedEastAddon : BaseAddon
-    {
-        [Constructable]
-        public SmallBedEastAddon()
+    public class SmallBedEastAddon : BaseAddon, IDyable
+	{
+        public virtual bool Dye( Mobile from, DyeTub sender )
         {
-            this.AddComponent(new AddonComponent(0xA5D), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0xA62), 1, 0, 0);
+            return true;
         }
 
-        public SmallBedEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		public override BaseAddonDeed Deed{ get{ return new SmallBedEastDeed(); } }
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new SmallBedEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public SmallBedEastAddon()
+		{
+			AddComponent( new AddonComponent( 0xA5D ), 0, 0, 0 );
+			AddComponent( new AddonComponent( 0xA62 ), 1, 0, 0 );
+		}
 
-            writer.Write((int)0); // version
-        }
+		public SmallBedEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadInt();
-        }
-    }
+			writer.Write( (int) 0 ); // version
+		}
 
-    public class SmallBedEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public SmallBedEastDeed()
-        {
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public SmallBedEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new SmallBedEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044322;
-            }
-        }// small bed (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+	public class SmallBedEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new SmallBedEastAddon(); } }
+		public override int LabelNumber{ get{ return 1044322; } } // small bed (east)
 
-            writer.Write((int)0); // version
-        }
+		[Constructable]
+		public SmallBedEastDeed()
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public SmallBedEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

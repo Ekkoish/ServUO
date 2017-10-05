@@ -1,91 +1,70 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class WaterTroughEastAddon : BaseAddon, IWaterSource
-    {
-        [Constructable]
-        public WaterTroughEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0xB41), 0, 0, 0);
-            this.AddComponent(new AddonComponent(0xB42), 0, 1, 0);
-        }
+	public class WaterTroughEastAddon : BaseAddon, IWaterSource
+	{
+		public override BaseAddonDeed Deed{ get{ return new WaterTroughEastDeed(); } }
 
-        public WaterTroughEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public WaterTroughEastAddon()
+		{
+			AddComponent( new AddonComponent( 0xB41 ), 0, 0, 0 );
+			AddComponent( new AddonComponent( 0xB42 ), 0, 1, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new WaterTroughEastDeed();
-            }
-        }
-        public int Quantity
-        {
-            get
-            {
-                return 500;
-            }
-            set
-            {
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public WaterTroughEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.Write( (int) 0 ); // version
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class WaterTroughEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public WaterTroughEastDeed()
-        {
-        }
+			int version = reader.ReadInt();
+		}
 
-        public WaterTroughEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public int Quantity
+		{
+			get{ return 500; }
+			set{}
+		}
+	}
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new WaterTroughEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044349;
-            }
-        }// water trough (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+	public class WaterTroughEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new WaterTroughEastAddon(); } }
+		public override int LabelNumber{ get{ return 1044349; } } // water trough (east)
 
-            writer.Write((int)0); // version
-        }
+		[Constructable]
+		public WaterTroughEastDeed()
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public WaterTroughEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

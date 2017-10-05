@@ -1,81 +1,64 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class StoneOvenSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public StoneOvenSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x931), -1, 0, 0);
-            this.AddComponent(new AddonComponent(0x930), 0, 0, 0);
-        }
+	public class StoneOvenSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new StoneOvenSouthDeed(); } }
 
-        public StoneOvenSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public StoneOvenSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x931 ), -1, 0, 0 );
+			AddComponent( new AddonComponent( 0x930 ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new StoneOvenSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public StoneOvenSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.Write( (int) 0 ); // version
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class StoneOvenSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public StoneOvenSouthDeed()
-        {
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public StoneOvenSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class StoneOvenSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new StoneOvenSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1044346; } } // stone oven (south)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new StoneOvenSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044346;
-            }
-        }// stone oven (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public StoneOvenSouthDeed()
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public StoneOvenSouthDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadInt();
-        }
-    }
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

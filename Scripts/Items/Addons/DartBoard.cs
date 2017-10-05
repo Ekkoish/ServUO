@@ -1,270 +1,218 @@
 using System;
+using Server;
 using Server.Network;
 
 namespace Server.Items
 {
-    public class DartBoard : AddonComponent
-    {
-        [Constructable]
-        public DartBoard()
-            : this(true)
-        {
-        }
+	public class DartBoard : AddonComponent
+	{
+		public override bool NeedsWall{ get{ return true; } }
+		public override Point3D WallPosition{ get{ return this.East ? new Point3D( -1, 0, 0 ) : new Point3D( 0, -1, 0 ); } }
 
-        [Constructable]
-        public DartBoard(bool east)
-            : base(east ? 0x1E2F : 0x1E2E)
-        {
-        }
+		public bool East{ get{ return this.ItemID == 0x1E2F; } }
 
-        public DartBoard(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public DartBoard() : this( true )
+		{
+		}
 
-        public override bool NeedsWall
-        {
-            get
-            {
-                return true;
-            }
-        }
-        public override Point3D WallPosition
-        {
-            get
-            {
-                return this.East ? new Point3D(-1, 0, 0) : new Point3D(0, -1, 0);
-            }
-        }
-        public bool East
-        {
-            get
-            {
-                return this.ItemID == 0x1E2F;
-            }
-        }
-        public override void OnDoubleClick(Mobile from)
-        {
-            Direction dir;
-            if (from.Location != this.Location)
-                dir = from.GetDirectionTo(this);
-            else if (this.East)
-                dir = Direction.West;
-            else
-                dir = Direction.North;
+		[Constructable]
+		public DartBoard( bool east ) : base( east ? 0x1E2F : 0x1E2E )
+		{
+		}
 
-            from.Direction = dir;
+		public DartBoard( Serial serial ) : base( serial )
+		{
+		}
 
-            bool canThrow = true;
+		public override void OnDoubleClick( Mobile from )
+		{
+			Direction dir;
+			if ( from.Location != this.Location )
+				dir = from.GetDirectionTo( this );
+			else if ( this.East )
+				dir = Direction.West;
+			else
+				dir = Direction.North;
 
-            if (!from.InRange(this, 4) || !from.InLOS(this))
-                canThrow = false;
-            else if (this.East)
-                canThrow = (dir == Direction.Left || dir == Direction.West || dir == Direction.Up);
-            else
-                canThrow = (dir == Direction.Up || dir == Direction.North || dir == Direction.Right);
+			from.Direction = dir;
 
-            if (canThrow)
-                this.Throw(from);
-            else
-                from.LocalOverheadMessage(MessageType.Regular, 0x3B2, 1019045); // I can't reach that.
-        }
+			bool canThrow = true;
 
-        public void Throw(Mobile from)
-        {
-            BaseKnife knife = from.Weapon as BaseKnife;
+			if ( !from.InRange( this, 4 ) || !from.InLOS( this ) )
+				canThrow = false;
+			else if ( this.East )
+				canThrow = ( dir == Direction.Left || dir == Direction.West || dir == Direction.Up );
+			else
+				canThrow = ( dir == Direction.Up || dir == Direction.North || dir == Direction.Right );
 
-            if (knife == null)
-            {
-                from.LocalOverheadMessage(MessageType.Regular, 0x3B2, 500751); // Try holding a knife...
-                return;
-            }
+			if ( canThrow )
+				Throw( from );
+			else
+				from.LocalOverheadMessage( MessageType.Regular, 0x3B2, 1019045 ); // I can't reach that.
+		}
 
-            from.Animate(from.Mounted ? 26 : 9, 7, 1, true, false, 0);
-            from.MovingEffect(this, knife.ItemID, 7, 1, false, false);
-            from.PlaySound(0x238);
+		public void Throw( Mobile from )
+		{
+			BaseKnife knife = from.Weapon as BaseKnife;
 
-            double rand = Utility.RandomDouble();
+			if ( knife == null )
+			{
+				from.LocalOverheadMessage( MessageType.Regular, 0x3B2, 500751 ); // Try holding a knife...
+				return;
+			}
 
-            int message;
-            if (rand < 0.05)
-                message = 500752; // BULLSEYE! 50 Points!
-            else if (rand < 0.20)
-                message = 500753; // Just missed the center! 20 points.
-            else if (rand < 0.45)
-                message = 500754; // 10 point shot.
-            else if (rand < 0.70)
-                message = 500755; // 5 pointer.
-            else if (rand < 0.85)
-                message = 500756; // 1 point.  Bad throw.
-            else
-                message = 500757; // Missed.
+			from.Animate( from.Mounted ? 26 : 9, 7, 1, true, false, 0 );
+			from.MovingEffect( this, knife.ItemID, 7, 1, false, false );
+			from.PlaySound( 0x238 );
 
-            this.PublicOverheadMessage(MessageType.Regular, 0x3B2, message);
-        }
+			double rand = Utility.RandomDouble();
 
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			int message;
+			if ( rand < 0.05 )
+				message = 500752; // BULLSEYE! 50 Points!
+			else if ( rand < 0.20 )
+				message = 500753; // Just missed the center! 20 points.
+			else if ( rand < 0.45 )
+				message = 500754; // 10 point shot.
+			else if ( rand < 0.70 )
+				message = 500755; // 5 pointer.
+			else if ( rand < 0.85 )
+				message = 500756; // 1 point.  Bad throw.
+			else
+				message = 500757; // Missed.
 
-            writer.WriteEncodedInt(0); // version
-        }
+			PublicOverheadMessage( MessageType.Regular, 0x3B2, message );
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-    public class DartBoardEastAddon : BaseAddon
-    {
-        public DartBoardEastAddon()
-        {
-            this.AddComponent(new DartBoard(true), 0, 0, 0);
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public DartBoardEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new DartBoardEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+	public class DartBoardEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new DartBoardEastDeed(); } }
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public DartBoardEastAddon()
+		{
+			AddComponent( new DartBoard( true ), 0, 0, 0 );
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public DartBoardEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-    public class DartBoardEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public DartBoardEastDeed()
-        {
-        }
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-        public DartBoardEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new DartBoardEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044326;
-            }
-        }// dartboard (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-            writer.WriteEncodedInt(0); // version
-        }
+	public class DartBoardEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new DartBoardEastAddon(); } }
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override int LabelNumber{ get{ return 1044326; } } // dartboard (east)
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		[Constructable]
+		public DartBoardEastDeed()
+		{
+		}
 
-    public class DartBoardSouthAddon : BaseAddon
-    {
-        public DartBoardSouthAddon()
-        {
-            this.AddComponent(new DartBoard(false), 0, 0, 0);
-        }
+		public DartBoardEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public DartBoardSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new DartBoardSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+	public class DartBoardSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new DartBoardSouthDeed(); } }
 
-    public class DartBoardSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public DartBoardSouthDeed()
-        {
-        }
+		public DartBoardSouthAddon()
+		{
+			AddComponent( new DartBoard( false ), 0, 0, 0 );
+		}
 
-        public DartBoardSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public DartBoardSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new DartBoardSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1044325;
-            }
-        }// dartboard (south)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            writer.WriteEncodedInt(0); // version
-        }
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			int version = reader.ReadEncodedInt();
+		}
+	}
+
+	public class DartBoardSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new DartBoardSouthAddon(); } }
+
+		public override int LabelNumber{ get{ return 1044325; } } // dartboard (south)
+
+		[Constructable]
+		public DartBoardSouthDeed()
+		{
+		}
+
+		public DartBoardSouthDeed( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }

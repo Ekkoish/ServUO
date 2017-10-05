@@ -1,308 +1,237 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class SmallStretchedHideEastAddon : BaseAddon
-    {
-        [Constructable]
-        public SmallStretchedHideEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x1069), 0, 0, 0);
-        }
+	public class SmallStretchedHideEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new SmallStretchedHideEastDeed(); } }
 
-        public SmallStretchedHideEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public SmallStretchedHideEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x1069 ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new SmallStretchedHideEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public SmallStretchedHideEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.Write( (int) 0 ); // version
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class SmallStretchedHideEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public SmallStretchedHideEastDeed()
-        {
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public SmallStretchedHideEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class SmallStretchedHideEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new SmallStretchedHideEastAddon(); } }
+		public override int LabelNumber{ get{ return 1049401; } } // a small stretched hide deed facing east
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new SmallStretchedHideEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1049401;
-            }
-        }// a small stretched hide deed facing east
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public SmallStretchedHideEastDeed()
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public SmallStretchedHideEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadInt();
-        }
-    }
+			writer.Write( (int) 0 ); // version
+		}
 
-    public class SmallStretchedHideSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public SmallStretchedHideSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x107A), 0, 0, 0);
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public SmallStretchedHideSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new SmallStretchedHideSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+	public class SmallStretchedHideSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new SmallStretchedHideSouthDeed(); } }
 
-            writer.Write((int)0); // version
-        }
+		[Constructable]
+		public SmallStretchedHideSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x107A ), 0, 0, 0 );
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public SmallStretchedHideSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-    public class SmallStretchedHideSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public SmallStretchedHideSouthDeed()
-        {
-        }
+			writer.Write( (int) 0 ); // version
+		}
 
-        public SmallStretchedHideSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new SmallStretchedHideSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1049402;
-            }
-        }// a small stretched hide deed facing south
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			int version = reader.ReadInt();
+		}
+	}
 
-            writer.Write((int)0); // version
-        }
+	public class SmallStretchedHideSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new SmallStretchedHideSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1049402; } } // a small stretched hide deed facing south
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		[Constructable]
+		public SmallStretchedHideSouthDeed()
+		{
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public SmallStretchedHideSouthDeed( Serial serial ) : base( serial )
+		{
+		}
 
-    public class MediumStretchedHideEastAddon : BaseAddon
-    {
-        [Constructable]
-        public MediumStretchedHideEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x106B), 0, 0, 0);
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public MediumStretchedHideEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+			writer.Write( (int) 0 ); // version
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new MediumStretchedHideEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-            writer.Write((int)0); // version
-        }
+			int version = reader.ReadInt();
+		}
+	}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+	public class MediumStretchedHideEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new MediumStretchedHideEastDeed(); } }
 
-            int version = reader.ReadInt();
-        }
-    }
+		[Constructable]
+		public MediumStretchedHideEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x106B ), 0, 0, 0 );
+		}
 
-    public class MediumStretchedHideEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public MediumStretchedHideEastDeed()
-        {
-        }
+		public MediumStretchedHideEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-        public MediumStretchedHideEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new MediumStretchedHideEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1049403;
-            }
-        }// a medium stretched hide deed facing east
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+			writer.Write( (int) 0 ); // version
+		}
 
-            writer.Write((int)0); // version
-        }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			int version = reader.ReadInt();
+		}
+	}
 
-            int version = reader.ReadInt();
-        }
-    }
+	public class MediumStretchedHideEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new MediumStretchedHideEastAddon(); } }
+		public override int LabelNumber{ get{ return 1049403; } } // a medium stretched hide deed facing east
 
-    public class MediumStretchedHideSouthAddon : BaseAddon
-    {
-        [Constructable]
-        public MediumStretchedHideSouthAddon()
-        {
-            this.AddComponent(new AddonComponent(0x107C), 0, 0, 0);
-        }
+		[Constructable]
+		public MediumStretchedHideEastDeed()
+		{
+		}
 
-        public MediumStretchedHideSouthAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		public MediumStretchedHideEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new MediumStretchedHideSouthDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            writer.Write((int)0); // version
-        }
+			writer.Write( (int) 0 ); // version
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-            int version = reader.ReadInt();
-        }
-    }
+			int version = reader.ReadInt();
+		}
+	}
 
-    public class MediumStretchedHideSouthDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public MediumStretchedHideSouthDeed()
-        {
-        }
+	public class MediumStretchedHideSouthAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new MediumStretchedHideSouthDeed(); } }
 
-        public MediumStretchedHideSouthDeed(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public MediumStretchedHideSouthAddon()
+		{
+			AddComponent( new AddonComponent( 0x107C ), 0, 0, 0 );
+		}
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new MediumStretchedHideSouthAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1049404;
-            }
-        }// a medium stretched hide deed facing south
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public MediumStretchedHideSouthAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.Write((int)0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.Write( (int) 0 ); // version
+		}
 
-            int version = reader.ReadInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
+
+	public class MediumStretchedHideSouthDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new MediumStretchedHideSouthAddon(); } }
+		public override int LabelNumber{ get{ return 1049404; } } // a medium stretched hide deed facing south
+
+		[Constructable]
+		public MediumStretchedHideSouthDeed()
+		{
+		}
+
+		public MediumStretchedHideSouthDeed( Serial serial ) : base( serial )
+		{
+		}
+
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
+
+			writer.Write( (int) 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadInt();
+		}
+	}
 }

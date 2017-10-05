@@ -1,80 +1,63 @@
 using System;
+using Server;
 
 namespace Server.Items
 {
-    public class SquirrelStatueEastAddon : BaseAddon
-    {
-        [Constructable]
-        public SquirrelStatueEastAddon()
-        {
-            this.AddComponent(new AddonComponent(0x2D10), 0, 0, 0);
-        }
+	public class SquirrelStatueEastAddon : BaseAddon
+	{
+		public override BaseAddonDeed Deed{ get{ return new SquirrelStatueEastDeed(); } }
 
-        public SquirrelStatueEastAddon(Serial serial)
-            : base(serial)
-        {
-        }
+		[Constructable]
+		public SquirrelStatueEastAddon()
+		{
+			AddComponent( new AddonComponent( 0x2D10 ), 0, 0, 0 );
+		}
 
-        public override BaseAddonDeed Deed
-        {
-            get
-            {
-                return new SquirrelStatueEastDeed();
-            }
-        }
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		public SquirrelStatueEastAddon( Serial serial ) : base( serial )
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+			writer.WriteEncodedInt( 0 ); // version
+		}
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
 
-    public class SquirrelStatueEastDeed : BaseAddonDeed
-    {
-        [Constructable]
-        public SquirrelStatueEastDeed()
-        {
-        }
+			int version = reader.ReadEncodedInt();
+		}
+	}
 
-        public SquirrelStatueEastDeed(Serial serial)
-            : base(serial)
-        {
-        }
+	public class SquirrelStatueEastDeed : BaseAddonDeed
+	{
+		public override BaseAddon Addon{ get{ return new SquirrelStatueEastAddon(); } }
+		public override int LabelNumber{ get{ return 1073398; } } // squirrel statue (east)
 
-        public override BaseAddon Addon
-        {
-            get
-            {
-                return new SquirrelStatueEastAddon();
-            }
-        }
-        public override int LabelNumber
-        {
-            get
-            {
-                return 1073398;
-            }
-        }// squirrel statue (east)
-        public override void Serialize(GenericWriter writer)
-        {
-            base.Serialize(writer);
+		[Constructable]
+		public SquirrelStatueEastDeed()
+		{
+		}
 
-            writer.WriteEncodedInt(0); // version
-        }
+		public SquirrelStatueEastDeed( Serial serial ) : base( serial )
+		{
+		}
 
-        public override void Deserialize(GenericReader reader)
-        {
-            base.Deserialize(reader);
+		public override void Serialize( GenericWriter writer )
+		{
+			base.Serialize( writer );
 
-            int version = reader.ReadEncodedInt();
-        }
-    }
+			writer.WriteEncodedInt( 0 ); // version
+		}
+
+		public override void Deserialize( GenericReader reader )
+		{
+			base.Deserialize( reader );
+
+			int version = reader.ReadEncodedInt();
+		}
+	}
 }
