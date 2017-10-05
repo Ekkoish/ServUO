@@ -3,82 +3,84 @@ using System.IO;
 
 namespace Server
 {
-    public class ShrinkTable
-    {
-        public const int DefaultItemID = 0x1870;// Yellow virtue stone
-        private static int[] m_Table;
-        public static int Lookup(Mobile m)
-        {
-            return Lookup(m.Body.BodyID, DefaultItemID);
-        }
+	public class ShrinkTable
+	{
+		public const int DefaultItemID = 0x1870; // Yellow virtue stone
 
-        public static int Lookup(int body)
-        {
-            return Lookup(body, DefaultItemID);
-        }
+		private static int[] m_Table;
 
-        public static int Lookup(Mobile m, int defaultValue)
-        {
-            return Lookup(m.Body.BodyID, defaultValue);
-        }
+		public static int Lookup( Mobile m )
+		{
+			return Lookup( m.Body.BodyID, DefaultItemID );
+		}
 
-        public static int Lookup(int body, int defaultValue)
-        {
-            if (m_Table == null)
-                Load();
+		public static int Lookup( int body )
+		{
+			return Lookup( body, DefaultItemID );
+		}
 
-            int val = 0;
+		public static int Lookup( Mobile m, int defaultValue )
+		{
+			return Lookup( m.Body.BodyID, defaultValue );
+		}
 
-            if (body >= 0 && body < m_Table.Length)
-                val = m_Table[body];
+		public static int Lookup( int body, int defaultValue )
+		{
+			if ( m_Table == null )
+				Load();
 
-            if (val == 0)
-                val = defaultValue;
+			int val = 0;
 
-            return val;
-        }
+			if ( body >= 0 && body < m_Table.Length )
+				val = m_Table[body];
 
-        private static void Load()
-        {
-            string path = Path.Combine(Core.BaseDirectory, "Data/shrink.cfg");
+			if ( val == 0 )
+				val = defaultValue;
 
-            if (!File.Exists(path))
-            {
-                m_Table = new int[0];
-                return;
-            }
+			return val;
+		}
 
-            m_Table = new int[1500];
+		private static void Load()
+		{
+			string path = Path.Combine( Core.BaseDirectory, "Data/shrink.cfg" );
 
-            using (StreamReader ip = new StreamReader(path))
-            {
-                string line;
+			if ( !File.Exists( path ) )
+			{
+				m_Table = new int[0];
+				return;
+			}
 
-                while ((line = ip.ReadLine()) != null)
-                {
-                    line = line.Trim();
+			m_Table = new int[1000];
 
-                    if (line.Length == 0 || line.StartsWith("#"))
-                        continue;
+			using ( StreamReader ip = new StreamReader( path ) )
+			{
+				string line;
 
-                    try
-                    {
-                        string[] split = line.Split('\t');
+				while ( (line = ip.ReadLine()) != null )
+				{
+					line = line.Trim();
 
-                        if (split.Length >= 2)
-                        {
-                            int body = Utility.ToInt32(split[0]);
-                            int item = Utility.ToInt32(split[1]);
+					if ( line.Length == 0 || line.StartsWith( "#" ) )
+						continue;
 
-                            if (body >= 0 && body < m_Table.Length)
-                                m_Table[body] = item;
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
-        }
-    }
+					try
+					{
+						string[] split = line.Split( '\t' );
+
+						if ( split.Length >= 2 )
+						{
+							int body = Utility.ToInt32( split[0] );
+							int item = Utility.ToInt32( split[1] );
+
+							if ( body >= 0 && body < m_Table.Length )
+								m_Table[body] = item;
+						}
+					}
+					catch
+					{
+					}
+				}
+			}
+		}
+	}
 }

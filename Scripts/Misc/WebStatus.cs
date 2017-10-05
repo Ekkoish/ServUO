@@ -1,194 +1,182 @@
-#region References
 using System;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Text;
-
-using Server.Guilds;
+using System.Collections;
+using Server;
 using Server.Network;
-#endregion
+using Server.Guilds;
+using Server.Mobiles;
 
 namespace Server.Misc
 {
 	public class StatusPage : Timer
 	{
-		public static readonly bool Enabled = false;
-
-		private static HttpListener _Listener;
-
-		private static string _StatusPage = String.Empty;
-		private static byte[] _StatusBuffer = new byte[0];
-
-		private static readonly object _StatusLock = new object();
-
+		public static bool LiveServer = true;
+		public static string WebFolder = LiveServer == true ? @"C:\Inetpub\wwwroot" : @"C:\Khaeros\Web";
+		
 		public static void Initialize()
 		{
-			if (!Enabled)
-			{
-				return;
-			}
-
 			new StatusPage().Start();
-
-			Listen();
 		}
 
-		private static void Listen()
-		{
-			if (!HttpListener.IsSupported)
-			{
-				return;
-			}
-
-			if (_Listener == null)
-			{
-				_Listener = new HttpListener();
-				_Listener.Prefixes.Add("http://*:80/status/");
-				_Listener.Start();
-			}
-			else if (!_Listener.IsListening)
-			{
-				_Listener.Start();
-			}
-
-			if (_Listener.IsListening)
-			{
-				_Listener.BeginGetContext(ListenerCallback, null);
-			}
-		}
-
-		private static void ListenerCallback(IAsyncResult result)
-		{
-			try
-			{
-				var context = _Listener.EndGetContext(result);
-
-				byte[] buffer;
-
-				lock (_StatusLock)
-				{
-					buffer = _StatusBuffer;
-				}
-
-				context.Response.ContentLength64 = buffer.Length;
-				context.Response.OutputStream.Write(buffer, 0, buffer.Length);
-				context.Response.OutputStream.Close();
-			}
-			catch
-			{ }
-
-			Listen();
-		}
-
-		private static string Encode(string input)
-		{
-			var sb = new StringBuilder(input);
-
-			sb.Replace("&", "&amp;");
-			sb.Replace("<", "&lt;");
-			sb.Replace(">", "&gt;");
-			sb.Replace("\"", "&quot;");
-			sb.Replace("'", "&apos;");
-
-			return sb.ToString();
-		}
-
-		public StatusPage()
-			: base(TimeSpan.FromSeconds(5.0), TimeSpan.FromSeconds(60.0))
+		public StatusPage() : base( TimeSpan.FromSeconds( 5.0 ), TimeSpan.FromMinutes( 5.0 ) )
 		{
 			Priority = TimerPriority.FiveSeconds;
 		}
 
+		private static string Encode( string input )
+		{
+			StringBuilder sb = new StringBuilder( input );
+
+			sb.Replace( "&", "&amp;" );
+			sb.Replace( "<", "&lt;" );
+			sb.Replace( ">", "&gt;" );
+			sb.Replace( "\"", "&quot;" );
+			sb.Replace( "'", "&apos;" );
+
+			return sb.ToString();
+		}
+		
+		public static void PublishWikiStatus()
+		{
+			using ( StreamWriter op = new StreamWriter( WebFolder + @"\Wiki\data\pages\status.txt" ) )
+			{
+				int players = 0;
+				
+				foreach ( NetState state in NetState.Instances )
+				{
+					Mobile m = state.Mobile;
+
+					if ( m != null && m is PlayerMobile && !( (PlayerMobile)m ).HideStatus )
+						players++;
+				}
+				
+				op.WriteLine( @"~~NOCACHE~~" );
+				op.WriteLine( @"====== Shard Status ======" );
+				op.WriteLine( @"\\" );
+				op.WriteLine( @"\\" );
+				op.WriteLine( @"Online Players: " + players.ToString() + @"\\" );
+				op.WriteLine( @"\\" );
+				op.WriteLine( @"**Player List** \\" );
+				op.WriteLine( @"\\" );
+
+				foreach ( NetState state in NetState.Instances )
+				{
+					Mobile m = state.Mobile;
+
+					if ( m != null && m is PlayerMobile && !( (PlayerMobile)m ).HideStatus )
+						op.WriteLine( @"" + m.Name + ", " + ((PlayerMobile)m).RPTitle + @"\\" );
+				}
+				
+				op.WriteLine( @"\\" );
+				op.WriteLine( @"\\" );
+				op.WriteLine( @"====== Current Time ======" );
+				op.WriteLine( @"The time, according to [[guides:universal_shard_time|UST]], is currently: " );
+				op.WriteLine( @"<php>" );
+				op.WriteLine( @"echo '<B>';" );
+				op.WriteLine( @";echo date('l jS \of F Y h:i:s A');" );
+				op.WriteLine( @";echo '</B>';" );
+				op.WriteLine( @"</php>" );
+			}
+		}
+
 		protected override void OnTick()
 		{
-			if (!Directory.Exists("web"))
+			if( LiveServer )
+				PublishWikiStatus();
+			
+			using ( StreamWriter op = new StreamWriter( WebFolder + @"\status.htm" ) )
 			{
-				Directory.CreateDirectory("web");
-			}
-
-			using (var op = new StreamWriter("web/status.html"))
-			{
-				op.WriteLine("<!DOCTYPE html>");
-				op.WriteLine("<html>");
-				op.WriteLine("   <head>");
-				op.WriteLine("      <title>" + ServerList.ServerName + " Server Status</title>");
-				op.WriteLine("   </head>");
-				op.WriteLine("   <style type=\"text/css\">");
-				op.WriteLine("   body { background: #999; }");
-				op.WriteLine("   table { width: 100%; }");
-				op.WriteLine("   tr.ruo-header td { background: #000; color: #FFF; }");
-				op.WriteLine("   tr.odd td { background: #222; color: #DDD; }");
-				op.WriteLine("   tr.even td { background: #DDD; color: #222; }");
-				op.WriteLine("   </style>");
-				op.WriteLine("   <body>");
-				op.WriteLine("      <h1>" + ServerList.ServerName + "Server Status</h1>");
-				op.WriteLine("      <h3>Online clients</h3>");
-				op.WriteLine("      <table cellpadding=\"0\" cellspacing=\"0\">");
-				op.WriteLine("         <tr class=\"ruo-header\"><td>Name</td><td>Location</td><td>Kills</td><td>Karma/Fame</td></tr>");
-
-				var index = 0;
-
-				foreach (var m in NetState.Instances.Where(state => state.Mobile != null).Select(state => state.Mobile))
+				int players = 0;
+				
+				foreach ( NetState state in NetState.Instances )
 				{
-					++index;
+					Mobile m = state.Mobile;
 
-					var g = m.Guild as Guild;
+					if ( m != null && m is PlayerMobile && !( (PlayerMobile)m ).HideStatus )
+						players++;
+				}
+				
+				op.WriteLine( "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" );
+				op.WriteLine( "<html xmlns=\"http://www.w3.org/1999/xhtml\">" );
+				op.WriteLine( "<head>" );
+				op.WriteLine( "<title>Khaeros</title>" );
+				op.WriteLine( "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />" );
+				op.WriteLine( "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />" );
+				op.WriteLine( "<link href=\"tutorsty.css\" rel=\"stylesheet\" type=\"text/css\" />" );
+				op.WriteLine( "<link href=\"flexcrollstyles.css\" rel=\"stylesheet\" type=\"text/css\" />" );
+				op.WriteLine( "<style type=\"text/css\">" );
+				op.WriteLine( ".p3 {font-size:10pt; color:#ffffff;}" );
+				op.WriteLine( "</style></head>" );
+				op.WriteLine( "<script type='text/javascript' src=\"flexcroll.js\"></script>" );
+				op.WriteLine( "<body background=\"khaeros_arquivos/bg.gif\" text=\"#ffffff\">" );
+				op.WriteLine( "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" height=\"100%\" width=\"100%\"><tbody><tr valign=\"top\"><td align=\"center\">" );
+				op.WriteLine( "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" height=\"600\" width=\"760\">" );
+				op.WriteLine( "<tbody><tr><td colspan=\"5\"><img src=\"khaeros_arquivos/bdr_top.gif\" alt=\"\" height=\"15\" width=\"760\"></td></tr>" );
+				op.WriteLine( "<tr><td colspan=\"5\"><img src=\"khaeros_arquivos/header.gif\" alt=\"\" height=\"110\" width=\"760\"></td></tr>" );
+				op.WriteLine( "<tr valign=\"top\">" );
+				op.WriteLine( "<td><img src=\"khaeros_arquivos/bdr_lft.gif\" alt=\"\" height=\"460\" width=\"15\"></td>" );
+				op.WriteLine( "<!-- MENU -->	<td><img src=\"khaeros_arquivos/menu.gif\" usemap=\"#menumap\" border=\"0\" height=\"460\" width=\"120\"></td>" );
+				op.WriteLine( "<td><img src=\"khaeros_arquivos/bdr_ctr.gif\" alt=\"\" height=\"460\" width=\"15\"></td>" );
+				op.WriteLine( "<td align=\"center\" height=\"460\" width=\"595\">" );
+				op.WriteLine( "<!-- MAIN -->" );
+				op.WriteLine( "<div id='mycustomscroll' class='flexcroll'>" );
+				op.WriteLine( "<div class='lipsum'>" );
+				op.WriteLine( "<p class=\"MsoNormal\" style=\"text-align: justify\">" );
+				op.WriteLine( "<font color=\"#CC9900\" size=\"4\">Status</font></p>" );
+				op.WriteLine( "<p class=\"MsoNormal\" style=\"text-align: justify\">" );
+				op.WriteLine( "&nbsp;</p>" );
+				op.WriteLine( "<p class=\"MsoNormal\" style=\"text-align: justify\">" );
+				//op.WriteLine( "<span style=\"font-size: 10.0pt\">- Status section.</span></p>" );
+				op.WriteLine( "       Online Players: " + players + "<br>" );
+				op.WriteLine( "      <table width=\"100%\">" );
+				op.WriteLine( "         <tr>" );
+				op.WriteLine( "            <td bgcolor=\"black\"><b><font color=\"#CC9900\">Player List</font></b></td>" );
+				op.WriteLine( "         </tr>" );
+				
 
-					op.Write("         <tr class=\"ruo-result " + (index % 2 == 0 ? "even" : "odd") + "\"><td>");
+				foreach ( NetState state in NetState.Instances )
+				{
+					Mobile m = state.Mobile;
 
-					if (g != null)
+					if ( m != null && m is PlayerMobile && !( (PlayerMobile)m ).HideStatus )
 					{
-						op.Write(Encode(m.Name));
-						op.Write(" [");
+						op.Write( "         <tr><td>" );
 
-						var title = m.GuildTitle;
+						op.Write( Encode( m.Name + ", " + ( (PlayerMobile)m ).RPTitle ) );
 
-						title = title != null ? title.Trim() : String.Empty;
-
-						if (title.Length > 0)
-						{
-							op.Write(Encode(title));
-							op.Write(", ");
-						}
-
-						op.Write(Encode(g.Abbreviation));
-
-						op.Write(']');
 					}
-					else
-					{
-						op.Write(Encode(m.Name));
-					}
-
-					op.Write("</td><td>");
-					op.Write(m.X);
-					op.Write(", ");
-					op.Write(m.Y);
-					op.Write(", ");
-					op.Write(m.Z);
-					op.Write(" (");
-					op.Write(m.Map);
-					op.Write(")</td><td>");
-					op.Write(m.Kills);
-					op.Write("</td><td>");
-					op.Write(m.Karma);
-					op.Write(" / ");
-					op.Write(m.Fame);
-					op.WriteLine("</td></tr>");
 				}
 
-				op.WriteLine("         <tr>");
-				op.WriteLine("      </table>");
-				op.WriteLine("   </body>");
-				op.WriteLine("</html>");
-			}
+				op.WriteLine( "         <tr>" );
+				op.WriteLine( "      </table>" );
+				op.WriteLine( "</div>" );
+				op.WriteLine( "</div>" );
+				op.WriteLine( "</td>" );
+				op.WriteLine( "<td><img src=\"khaeros_arquivos/bdr_rgt.gif\" alt=\"\" height=\"460\" width=\"15\"></td>" );
+				op.WriteLine( "</tr>" );
+				op.WriteLine( "<tr><td colspan=\"5\" background=\"khaeros_arquivos/bdr_btm.gif\" height=\"15\" width=\"760\"></td></tr>" );
+				op.WriteLine( "</tbody></table>" );
+				op.WriteLine( "</td></tr></tbody></table>" );
+				op.WriteLine( "<map name=\"menumap\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 40, 120, 65\" target=\"_self\" href=\"http://www.khaeros.com/khaeros.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 65, 120, 85\" target=\"_self\" href=\"http://www.khaeros.com/rules.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 85, 120, 105\" target=\"_self\" href=\"http://www.khaeros.com/forums\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 105, 120, 125\" target=\"_self\" href=\"http://server.khaeros.com/Status.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 125, 120, 147\" target=\"_self\" href=\"http://www.khaeros.com/classes.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 195, 120, 215\" target=\"_self\" href=\"http://www.khaeros.com/Northern.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 215, 120, 240\" target=\"_self\" href=\"http://www.khaeros.com/Tirebladd.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 240, 120, 260\" target=\"_self\" href=\"http://www.khaeros.com/Southern.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 260, 120, 283\" target=\"_self\" href=\"http://www.khaeros.com/Haluaroc.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 283, 120, 305\" target=\"_self\" href=\"http://www.khaeros.com/Western.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 305, 120, 325\" target=\"_self\" href=\"http://www.khaeros.com/mhordul.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 350, 120, 370\" target=\"_self\" href=\"http://www.khaeros.com/shop.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 370, 120, 390\" target=\"_self\" href=\"http://www.khaeros.com/donations.htm\">" );
+				op.WriteLine( "<area shape=\"rect\" coords=\"0, 390, 120, 415\" target=\"_self\" href=\"http://www.khaeros.com/staff.htm\">" );
+				op.WriteLine( "</map></body></html>" );
 
-			lock (_StatusLock)
-			{
-				_StatusPage = File.ReadAllText("web/status.html");
-				_StatusBuffer = Encoding.UTF8.GetBytes(_StatusPage);
-			}
+				
+			}			
 		}
 	}
 }
